@@ -57,25 +57,7 @@ export default function LoginPage() {
         }
     };
 
-    const handleDevLogin2 = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch("/api/auth/dev", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: "Daniel CH", email: "daniel@example.com" }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Dev login failed");
-            localStorage.setItem("user", JSON.stringify(data.user));
-            localStorage.setItem("token", data.token);
-            router.push("/");
-        } catch (e: any) {
-            setError(e.message || "Dev login failed");
-        } finally {
-            setLoading(false);
-        }
-    };
+
 
     return (
         <div
@@ -391,22 +373,7 @@ export default function LoginPage() {
                                 {loading ? "Signing in..." : "Continue as Demo User"}
                             </button>
 
-                            <button
-                                onClick={handleDevLogin2}
-                                disabled={loading}
-                                className="btn-secondary"
-                                style={{
-                                    width: "100%",
-                                    padding: "var(--spacing-3) var(--spacing-4)",
-                                    fontSize: "var(--font-size-base)",
-                                    fontWeight: "var(--font-weight-semibold)",
-                                    marginTop: "var(--spacing-3)",
-                                    opacity: loading ? 0.5 : 1,
-                                    cursor: loading ? "not-allowed" : "pointer",
-                                }}
-                            >
-                                {loading ? "Signing in..." : "Continue as Daniel (Test)"}
-                            </button>
+
                         </div>
 
                         <p
