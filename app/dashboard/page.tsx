@@ -11,11 +11,37 @@ export default function DashboardPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
 
+    const [statsData, setStatsData] = useState({
+        messages: 0,
+        media: 0,
+        documents: 0,
+        contacts: 0
+    });
+
     useEffect(() => {
         if (!loading && !user) {
             router.push("/login");
+        } else if (user) {
+            fetchStats();
         }
     }, [user, loading, router]);
+
+    const fetchStats = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            const res = await fetch("/api/dashboard/stats", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setStatsData(data);
+            }
+        } catch (error) {
+            console.error("Error fetching dashboard stats:", error);
+        }
+    };
 
     if (loading) {
         return (
@@ -37,28 +63,28 @@ export default function DashboardPage() {
         {
             icon: MessageSquare,
             label: "Total Messages",
-            value: "1,234",
+            value: statsData.messages.toLocaleString(),
             color: "var(--color-primary)",
             bgColor: "rgba(99, 102, 241, 0.1)",
         },
         {
             icon: Users,
-            label: "Contacts",
-            value: "48",
+            label: "Active Chats",
+            value: statsData.contacts.toLocaleString(),
             color: "#10B981",
             bgColor: "rgba(16, 185, 129, 0.1)",
         },
         {
             icon: Image,
             label: "Media Files",
-            value: "156",
+            value: statsData.media.toLocaleString(),
             color: "#F59E0B",
             bgColor: "rgba(245, 158, 11, 0.1)",
         },
         {
             icon: FileText,
             label: "Documents",
-            value: "23",
+            value: statsData.documents.toLocaleString(),
             color: "#8B5CF6",
             bgColor: "rgba(139, 92, 246, 0.1)",
         },
@@ -88,19 +114,20 @@ export default function DashboardPage() {
 
                 <div style={{ flex: 1, overflow: "auto", padding: "var(--spacing-8)" }}>
                     {/* Welcome Header */}
-                    <div style={{ marginBottom: "var(--spacing-8)" }}>
+                    <div style={{ marginBottom: "var(--spacing-10)" }}>
                         <h1
                             style={{
-                                fontSize: "var(--font-size-2xl)",
-                                fontWeight: "var(--font-weight-bold)",
+                                fontSize: "32px",
+                                fontWeight: "800",
                                 color: "var(--text-primary)",
-                                marginBottom: "var(--spacing-2)",
+                                marginBottom: "8px",
+                                letterSpacing: "-0.5px",
                             }}
                         >
-                            Welcome back, {user.name}!
+                            Welcome back, {user.name?.split(' ')[0]}! 👋
                         </h1>
-                        <p style={{ fontSize: "var(--font-size-base)", color: "var(--text-secondary)" }}>
-                            Here's what's happening with your messages today.
+                        <p style={{ fontSize: "16px", color: "var(--text-secondary)", maxWidth: "600px" }}>
+                            Here's an overview of your communication activity.
                         </p>
                     </div>
 
@@ -108,9 +135,9 @@ export default function DashboardPage() {
                     <div
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                            gap: "var(--spacing-6)",
-                            marginBottom: "var(--spacing-8)",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                            gap: "24px",
+                            marginBottom: "48px",
                         }}
                     >
                         {stats.map((stat) => {
@@ -120,41 +147,47 @@ export default function DashboardPage() {
                                     key={stat.label}
                                     style={{
                                         backgroundColor: "var(--bg-surface)",
-                                        borderRadius: "var(--radius-lg)",
-                                        padding: "var(--spacing-6)",
+                                        borderRadius: "16px",
+                                        padding: "24px",
                                         border: "1px solid var(--border-light)",
-                                        transition: "all var(--transition-fast)",
+                                        transition: "all 0.2s ease-in-out",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        justifyContent: "space-between",
+                                        height: "160px",
                                     }}
                                     className="stat-card"
                                 >
-                                    <div
-                                        style={{
-                                            width: "48px",
-                                            height: "48px",
-                                            borderRadius: "var(--radius-md)",
-                                            backgroundColor: stat.bgColor,
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            marginBottom: "var(--spacing-4)",
-                                        }}
-                                    >
-                                        <Icon size={24} color={stat.color} />
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                        <div
+                                            style={{
+                                                fontSize: "14px",
+                                                fontWeight: "600",
+                                                color: "var(--text-secondary)",
+                                            }}
+                                        >
+                                            {stat.label}
+                                        </div>
+                                        <div
+                                            style={{
+                                                width: "40px",
+                                                height: "40px",
+                                                borderRadius: "12px",
+                                                backgroundColor: stat.bgColor,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                            }}
+                                        >
+                                            <Icon size={20} color={stat.color} />
+                                        </div>
                                     </div>
                                     <div
                                         style={{
-                                            fontSize: "var(--font-size-sm)",
-                                            color: "var(--text-secondary)",
-                                            marginBottom: "var(--spacing-2)",
-                                        }}
-                                    >
-                                        {stat.label}
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: "var(--font-size-2xl)",
-                                            fontWeight: "var(--font-weight-bold)",
+                                            fontSize: "36px",
+                                            fontWeight: "800",
                                             color: "var(--text-primary)",
+                                            letterSpacing: "-1px",
                                         }}
                                     >
                                         {stat.value}
@@ -165,13 +198,13 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Quick Actions */}
-                    <div style={{ marginBottom: "var(--spacing-8)" }}>
+                    <div style={{ marginBottom: "48px" }}>
                         <h2
                             style={{
-                                fontSize: "var(--font-size-xl)",
-                                fontWeight: "var(--font-weight-semibold)",
+                                fontSize: "20px",
+                                fontWeight: "700",
                                 color: "var(--text-primary)",
-                                marginBottom: "var(--spacing-4)",
+                                marginBottom: "20px",
                             }}
                         >
                             Quick Actions
@@ -179,8 +212,8 @@ export default function DashboardPage() {
                         <div
                             style={{
                                 display: "grid",
-                                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                                gap: "var(--spacing-4)",
+                                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                                gap: "20px",
                             }}
                         >
                             {quickActions.map((action) => {
@@ -192,45 +225,47 @@ export default function DashboardPage() {
                                         style={{
                                             backgroundColor: "var(--bg-surface)",
                                             border: "1px solid var(--border-light)",
-                                            borderRadius: "var(--radius-lg)",
-                                            padding: "var(--spacing-5)",
+                                            borderRadius: "16px",
+                                            padding: "24px",
                                             display: "flex",
                                             alignItems: "center",
-                                            gap: "var(--spacing-4)",
+                                            gap: "20px",
                                             cursor: "pointer",
-                                            transition: "all var(--transition-fast)",
+                                            transition: "all 0.2s ease",
                                             textAlign: "left",
+                                            width: "100%",
                                         }}
                                         className="action-card"
                                     >
                                         <div
                                             style={{
-                                                width: "48px",
-                                                height: "48px",
-                                                borderRadius: "var(--radius-md)",
-                                                backgroundColor: "rgba(99, 102, 241, 0.1)",
+                                                width: "56px",
+                                                height: "56px",
+                                                borderRadius: "16px",
+                                                backgroundColor: "var(--bg-main)",
                                                 display: "flex",
                                                 alignItems: "center",
                                                 justifyContent: "center",
                                                 flexShrink: 0,
+                                                border: "1px solid var(--border-light)",
                                             }}
                                         >
-                                            <Icon size={24} color="var(--color-primary)" />
+                                            <Icon size={24} color="var(--text-primary)" />
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <div
                                                 style={{
-                                                    fontSize: "var(--font-size-base)",
-                                                    fontWeight: "var(--font-weight-semibold)",
+                                                    fontSize: "16px",
+                                                    fontWeight: "700",
                                                     color: "var(--text-primary)",
-                                                    marginBottom: "var(--spacing-1)",
+                                                    marginBottom: "4px",
                                                 }}
                                             >
                                                 {action.label}
                                             </div>
                                             <div
                                                 style={{
-                                                    fontSize: "var(--font-size-sm)",
+                                                    fontSize: "14px",
                                                     color: "var(--text-secondary)",
                                                 }}
                                             >
@@ -244,55 +279,19 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* Recent Activity */}
-                    <div>
-                        <h2
-                            style={{
-                                fontSize: "var(--font-size-xl)",
-                                fontWeight: "var(--font-weight-semibold)",
-                                color: "var(--text-primary)",
-                                marginBottom: "var(--spacing-4)",
-                            }}
-                        >
-                            Recent Activity
-                        </h2>
-                        <div
-                            style={{
-                                backgroundColor: "var(--bg-surface)",
-                                border: "1px solid var(--border-light)",
-                                borderRadius: "var(--radius-lg)",
-                                padding: "var(--spacing-6)",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    textAlign: "center",
-                                    padding: "var(--spacing-8)",
-                                    color: "var(--text-secondary)",
-                                }}
-                            >
-                                <MessageSquare size={48} color="var(--text-muted)" style={{ margin: "0 auto var(--spacing-4)" }} />
-                                <p style={{ fontSize: "var(--font-size-base)" }}>
-                                    No recent activity to display
-                                </p>
-                                <p style={{ fontSize: "var(--font-size-sm)", marginTop: "var(--spacing-2)" }}>
-                                    Start a conversation to see your activity here
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <style jsx>{`
                 .stat-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                    border-color: var(--color-primary);
+                    background-color: var(--bg-surface-hover);
                 }
 
                 .action-card:hover {
                     border-color: var(--color-primary);
-                    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+                    background-color: var(--bg-surface-hover);
+                    transform: translateY(-2px);
                 }
             `}</style>
         </div>
