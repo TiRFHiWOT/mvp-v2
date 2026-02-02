@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePusher } from "@/hooks/usePusher";
 import { ChatList } from "../components/ChatList";
 import ChatWindow from "../components/ChatWindow";
-import { Sidebar } from "../components/Sidebar";
 import { TopNav } from "../components/TopNav";
 
 interface Session {
@@ -87,9 +86,6 @@ export default function Home() {
         backgroundColor: "var(--bg-main)",
       }}
     >
-      {/* Left Sidebar */}
-      <Sidebar />
-
       {/* Main Content Area */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Top Navigation */}
