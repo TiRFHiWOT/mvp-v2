@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?  // From ChatApp
+  picture   String?
+  status    String   @default("offline") // Preserved
+  lastSeen  DateTime @default(now())     // Preserved
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations matching ChatApp logic
+  sentMessages     Message[]        @relation("Sender")
+  sessionsAsUser1  ChatSession[]    @relation("User1")
+  sessionsAsUser2  ChatSession[]    @relation("User2")
+  mediaFiles       Media[]          @relation("UserMedia")
+  aiChats          AIChatSession[]  @relation("UserAIChats")
+}
+
+model ChatSession {
+  id        String   @id @default(cuid())
+  user1Id   String
+  user2Id   String
+  createdAt DateTime @default(now())
+
+  user1 User @relation("User1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2 User @relation("User2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  messages Message[]
+  media    Media[]
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  sessionId String
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender  User        @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+model Media {
+  id          String   @id @default(cuid())
+  userId      String
+  sessionId   String?  // Optional - file might not be tied to a specific session
+  fileName    String
+  originalName String
+  fileSize    Int
+  fileType    String   // MIME type
+  fileUrl     String
+  category    String   // "image", "document", "video", "audio", "other"
+  createdAt   DateTime @default(now())
+
+  user    User         @relation("UserMedia", fields: [userId], references: [id], onDelete: Cascade)
+  session ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+// AI Chat Models
+model AIChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String   @default("New Chat")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User        @relation("UserAIChats", fields: [userId], references: [id], onDelete: Cascade)
+  messages AIMessage[]
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AIMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   // "user" or "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  session AIChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
