@@ -79,6 +79,23 @@ export async function POST(
       },
     });
 
+    // Create notification for the recipient
+    if (recipientId) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: recipientId,
+            senderId: senderId,
+            type: "message",
+            title: `New message from ${message.sender?.name || "User"}`,
+            description: content.length > 50 ? content.substring(0, 50) + "..." : content,
+          },
+        });
+      } catch (notifError) {
+        console.error("Error creating notification:", notifError);
+      }
+    }
+
     // Trigger Pusher event for real-time message
     try {
       await pusherServer.trigger(

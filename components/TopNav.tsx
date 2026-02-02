@@ -12,43 +12,28 @@ interface TopNavProps {
 }
 
 // Mock data for notifications
-const mockNotifications = [
-    {
-        id: "1",
-        type: "message",
-        title: "New message from Sarah",
-        description: "Hey! Are you available for a quick call?",
-        time: "2 min ago",
-        read: false,
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-    },
-    {
-        id: "2",
-        type: "friend",
-        title: "Alex sent you a friend request",
-        description: "Accept to start messaging",
-        time: "15 min ago",
-        read: false,
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-    },
-    {
-        id: "3",
-        type: "system",
-        title: "Your message was delivered",
-        description: "Message to John was successfully delivered",
-        time: "1 hour ago",
-        read: true,
-        avatar: null,
-    },
-    {
-        id: "4",
-        type: "message",
-        title: "New message from Mike",
-        description: "Thanks for the update!",
-        time: "3 hours ago",
-        read: true,
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
-    },
+import { formatDistanceToNow } from "date-fns";
+interface Notification {
+    id: string;
+    type: string;
+    title: string;
+    description: string | null;
+    read: boolean;
+    createdAt: string;
+    sender: {
+        id: string;
+        name: string | null;
+        picture: string | null;
+    } | null;
+}
+
+// Mock search results
+const mockSearchResults = [
+    { id: "1", name: "Sarah Wilson", type: "contact", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" },
+    { id: "2", name: "Design Team Chat", type: "chat", avatar: null },
+    { id: "3", name: "Schedule meeting", type: "message", preview: "...can we schedule a meeting for..." },
+    { id: "4", name: "Alex Johnson", type: "contact", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" },
+    { id: "5", name: "Project Updates", type: "chat", avatar: null },
 ];
 
 // Mock search results
@@ -68,7 +53,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
     const [showNotifications, setShowNotifications] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showProfileDrawer, setShowProfileDrawer] = useState(false);
-    const [notifications, setNotifications] = useState(mockNotifications);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const searchRef = useRef<HTMLDivElement>(null);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -116,12 +101,71 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
         if (onSearch) onSearch("");
     };
 
-    const markAllAsRead = () => {
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    // Fetch notifications on mount
+    useEffect(() => {
+        if (user) {
+            fetchNotifications();
+            // Optional: Set up an interval or socket listener here
+        }
+    }, [user]);
+
+    const fetchNotifications = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            const res = await fetch("/api/notifications", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setNotifications(data);
+            }
+        } catch (error) {
+            console.error("Error fetching notifications:", error);
+        }
     };
 
-    const markAsRead = (id: string) => {
-        setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    const markAllAsRead = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            setNotifications((prev) => prev.map((n) => ({ ...n, read: true }))); // Optimistic update
+            await fetch("/api/notifications", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ all: true }),
+            });
+        } catch (error) {
+            console.error("Error marking all as read:", error);
+            fetchNotifications(); // Revert on error
+        }
+    };
+
+    const markAsRead = async (id: string) => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n))); // Optimistic update
+            await fetch("/api/notifications", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ id }),
+            });
+        } catch (error) {
+            console.error("Error marking as read:", error);
+            fetchNotifications(); // Revert on error
+        }
     };
 
     const handleLogout = () => {
@@ -525,9 +569,9 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                                 className="notification-item"
                                             >
                                                 {/* Avatar */}
-                                                {notification.avatar ? (
+                                                {notification.sender?.picture ? (
                                                     <img
-                                                        src={notification.avatar}
+                                                        src={notification.sender.picture}
                                                         alt=""
                                                         style={{
                                                             width: "40px",
@@ -593,7 +637,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                                         }}
                                                     >
                                                         <Clock size={12} />
-                                                        {notification.time}
+                                                        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                                                     </div>
                                                 </div>
 

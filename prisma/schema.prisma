@@ -31,6 +31,26 @@ model User {
   sessionsAsUser2  ChatSession[]    @relation("User2")
   mediaFiles       Media[]          @relation("UserMedia")
   aiChats          AIChatSession[]  @relation("UserAIChats")
+  notifications    Notification[]   @relation("UserNotifications")
+  sentNotifications Notification[]  @relation("NotificationSender")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String   // The user who receives the notification
+  senderId    String?  // The user who triggered the notification (if applicable)
+  type        String   // "message", "friend", "system"
+  title       String
+  description String?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user   User  @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  sender User? @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([read])
 }
 
 model ChatSession {
