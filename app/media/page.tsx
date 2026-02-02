@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { Image, FileText, Upload, Download, Trash2, Search } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { Sidebar } from "@/components/Sidebar";
 import { TopNav } from "@/components/TopNav";
 
 type MediaTab = "image" | "document" | "all";
@@ -164,6 +165,8 @@ export default function MediaPage() {
 
     return (
         <div style={{ display: "flex", height: "100vh", backgroundColor: "var(--bg-main)" }}>
+            <Sidebar />
+
             <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
                 <TopNav title="Media & Files" />
 

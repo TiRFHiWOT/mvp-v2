@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { Sidebar } from "@/components/Sidebar";
 import { TopNav } from "@/components/TopNav";
 import { Send, Sparkles, Plus, Trash2, MessageSquare } from "lucide-react";
 import { useState, useRef } from "react";
@@ -257,6 +258,8 @@ export default function AIChat() {
 
     return (
         <div style={{ display: "flex", height: "100vh", backgroundColor: "var(--bg-main)" }}>
+            <Sidebar />
+
             <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 <TopNav title="AI Chat" />
 
