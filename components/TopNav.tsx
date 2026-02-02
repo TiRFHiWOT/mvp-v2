@@ -27,14 +27,7 @@ interface Notification {
     } | null;
 }
 
-// Mock search results
-const mockSearchResults = [
-    { id: "1", name: "Sarah Wilson", type: "contact", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" },
-    { id: "2", name: "Design Team Chat", type: "chat", avatar: null },
-    { id: "3", name: "Schedule meeting", type: "message", preview: "...can we schedule a meeting for..." },
-    { id: "4", name: "Alex Johnson", type: "contact", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" },
-    { id: "5", name: "Project Updates", type: "chat", avatar: null },
-];
+
 
 // Mock search results
 const mockSearchResults = [
