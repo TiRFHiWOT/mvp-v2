@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +16,7 @@ interface Session {
   user2: { id: string; name: string; picture?: string; email: string };
 }
 
-export default function Home() {
+function HomeContent() {
   const { user, loading: authLoading } = useAuth();
   const { onlineUsers } = usePusher(user?.id || null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -180,5 +180,25 @@ export default function Home() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div
+        style={{
+          display: "flex",
+          height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "var(--bg-main)",
+        }}
+      >
+        <Loader2 className="animate-spin" size={48} style={{ color: "var(--color-primary)" }} />
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
