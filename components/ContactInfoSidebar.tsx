@@ -3,6 +3,8 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 
+import { Message } from "@/hooks/useMessages";
+
 interface ContactInfoSidebarProps {
     isOpen: boolean;
     onClose: () => void;
@@ -13,22 +15,31 @@ interface ContactInfoSidebarProps {
         email: string;
     } | null;
     title?: string;
+    messages: Message[];
 }
 
 export function ContactInfoSidebar({
     isOpen,
     onClose,
     user,
-    title = "Contact Info"
+    title = "Contact Info",
+    messages = []
 }: ContactInfoSidebarProps) {
     const [activeTab, setActiveTab] = useState<"media" | "link" | "docs">("media");
 
     if (!isOpen || !user) return null;
 
-    // Data is empty for now until real sharing is implemented
-    const mediaItems: any[] = [];
-    const linkItems: any[] = [];
-    const docItems: any[] = [];
+    const isImage = (url: string) => {
+        if (!url) return false;
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+        return url.startsWith('/uploads/') && imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
+    };
+
+    const isDocument = (url: string) => {
+        if (!url) return false;
+        const docExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'];
+        return url.startsWith('/uploads/') && docExtensions.some(ext => url.toLowerCase().endsWith(ext));
+    };
 
     const getDocIcon = (type: string) => {
         switch (type) {
@@ -38,6 +49,14 @@ export function ContactInfoSidebar({
             default: return { bg: "#6B7280", text: "DOC" };
         }
     };
+
+    const mediaItems = messages.filter(m => isImage(m.content));
+    const docItems = messages.filter(m => isDocument(m.content));
+    // Simple link extraction logic - assumes message is just a URL if it starts with http
+    const linkItems = messages.filter(m => {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return m.content.match(urlRegex) && !isImage(m.content) && !isDocument(m.content);
+    });
 
     return (
         <>
@@ -61,18 +80,19 @@ export function ContactInfoSidebar({
             <div
                 style={{
                     position: "fixed",
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    width: "100%",
-                    maxWidth: "360px",
+                    top: "16px",
+                    right: "16px",
+                    bottom: "16px",
+                    width: "min(360px, calc(100vw - 32px))",
                     backgroundColor: "var(--bg-surface)",
-                    boxShadow: "-4px 0 20px rgba(0, 0, 0, 0.1)",
+                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
                     zIndex: 999,
-                    transform: isOpen ? "translateX(0)" : "translateX(100%)",
+                    transform: isOpen ? "translateX(0)" : "translateX(calc(100% + 20px))",
                     transition: "transform var(--transition-normal)",
                     display: "flex",
                     flexDirection: "column",
+                    borderRadius: "16px",
+                    border: "1px solid var(--border-light)",
                 }}
             >
                 {/* Header */}
@@ -205,23 +225,104 @@ export function ContactInfoSidebar({
                 {/* Content Area */}
                 <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
                     {activeTab === "media" && (
-                        <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
-                            <div style={{ fontSize: "32px", marginBottom: "12px" }}>🖼️</div>
-                            <div style={{ fontSize: "14px" }}>No media shared yet</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                            {mediaItems.length > 0 ? (
+                                mediaItems.map((m) => (
+                                    <div
+                                        key={m.id}
+                                        className="media-item"
+                                        style={{ aspectRatio: "1", borderRadius: "8px", overflow: "hidden", cursor: "pointer", border: "1px solid var(--border-light)" }}
+                                        onClick={() => window.open(m.content, '_blank')}
+                                    >
+                                        <img src={m.content} alt="Shared media" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
+                                    <div style={{ fontSize: "32px", marginBottom: "12px" }}>🖼️</div>
+                                    <div style={{ fontSize: "14px" }}>No media shared yet</div>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {activeTab === "link" && (
-                        <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
-                            <div style={{ fontSize: "32px", marginBottom: "12px" }}>🔗</div>
-                            <div style={{ fontSize: "14px" }}>No links shared yet</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                            {linkItems.length > 0 ? (
+                                linkItems.map((m) => (
+                                    <a
+                                        key={m.id}
+                                        href={m.content}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="link-item"
+                                        style={{
+                                            padding: "12px",
+                                            borderRadius: "8px",
+                                            backgroundColor: "var(--bg-main)",
+                                            textDecoration: "none",
+                                            color: "inherit",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "12px",
+                                            transition: "background-color 0.2s"
+                                        }}
+                                    >
+                                        <div style={{ width: "40px", height: "40px", borderRadius: "8px", backgroundColor: "var(--color-primary-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>🔗</div>
+                                        <div style={{ flex: 1, overflow: "hidden" }}>
+                                            <div style={{ fontWeight: 500, fontSize: "14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.content}</div>
+                                            <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{new Date(m.createdAt).toLocaleDateString()}</div>
+                                        </div>
+                                    </a>
+                                ))
+                            ) : (
+                                <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
+                                    <div style={{ fontSize: "32px", marginBottom: "12px" }}>🔗</div>
+                                    <div style={{ fontSize: "14px" }}>No links shared yet</div>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {activeTab === "docs" && (
-                        <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
-                            <div style={{ fontSize: "32px", marginBottom: "12px" }}>📄</div>
-                            <div style={{ fontSize: "14px" }}>No documents shared yet</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                            {docItems.length > 0 ? (
+                                docItems.map((m) => {
+                                    const ext = m.content.split('.').pop()?.toLowerCase() || 'doc';
+                                    const { bg, text } = getDocIcon(ext);
+                                    return (
+                                        <a
+                                            key={m.id}
+                                            href={m.content}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="doc-item"
+                                            style={{
+                                                padding: "12px",
+                                                borderRadius: "8px",
+                                                backgroundColor: "var(--bg-main)",
+                                                textDecoration: "none",
+                                                color: "inherit",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "12px",
+                                                transition: "background-color 0.2s"
+                                            }}
+                                        >
+                                            <div style={{ width: "40px", height: "40px", borderRadius: "8px", backgroundColor: bg, color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold" }}>{text}</div>
+                                            <div style={{ flex: 1, overflow: "hidden" }}>
+                                                <div style={{ fontWeight: 500, fontSize: "14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.content.split('/').pop()}</div>
+                                                <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{new Date(m.createdAt).toLocaleDateString()}</div>
+                                            </div>
+                                        </a>
+                                    );
+                                })
+                            ) : (
+                                <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
+                                    <div style={{ fontSize: "32px", marginBottom: "12px" }}>📄</div>
+                                    <div style={{ fontSize: "14px" }}>No documents shared yet</div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import jwt from "jsonwebtoken";
+import { verifyToken, getUserById } from "@/lib/auth";
 
-// Get user from token
-async function getUserFromToken() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
+// Get user from request
+async function getUserFromRequest(request: NextRequest) {
+    const authHeader = request.headers.get("authorization");
 
-    if (!token) return null;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        const decoded = verifyToken(token);
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "dev-secret") as { userId: string };
-        const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-        return user;
-    } catch {
-        return null;
+        if (decoded) {
+            return await getUserById(decoded.userId);
+        }
     }
+
+    return null;
 }
 
 export async function POST(request: NextRequest) {
     try {
-        const user = await getUserFromToken();
+        const user = await getUserFromRequest(request);
         const { message, conversationHistory, sessionId } = await request.json();
 
         const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -103,6 +102,7 @@ export async function POST(request: NextRequest) {
                     where: { sessionId: sessionId }
                 });
 
+                // If this is the first exchange (2 messages: user + AI), update the title
                 if (sessionMessages <= 2) {
                     // Generate title from first user message
                     const title = message.length > 30 ? message.substring(0, 30) + "..." : message;
@@ -121,6 +121,8 @@ export async function POST(request: NextRequest) {
                 console.error("Error saving messages to DB:", dbError);
                 // Continue anyway - don't fail the chat just because DB save failed
             }
+        } else {
+            console.warn("User not authenticated or sessionId missing, messages not saved.");
         }
 
         return NextResponse.json({ response: aiResponse });

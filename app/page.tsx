@@ -39,9 +39,6 @@ function HomeContent() {
     if (userIdFromUrl && userIdFromUrl !== selectedUserId) {
       console.log("Setting selectedUserId to", userIdFromUrl);
       setSelectedUserId(userIdFromUrl);
-      // Optional: Clear the query param so refreshing doesn't force this user
-      // But keeping it allows sharing links to chats.
-      // Let's keep it for now as "deep linking".
     }
   }, [searchParams, selectedUserId]);
 
@@ -111,10 +108,29 @@ function HomeContent() {
           <TopNav title="Message" />
         </div>
 
-        {/* Chat Area */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          {/* Chat List */}
-          <div className={`${selectedUserId ? 'mobile-hidden' : 'mobile-visible'}`}>
+        {/* Chat Area - Split View */}
+        <div
+          className="chat-split-view"
+          style={{
+            flex: 1,
+            display: "flex",
+            overflow: "hidden",
+            margin: "var(--spacing-4)",
+            gap: "var(--spacing-4)",
+          }}
+        >
+          {/* Chat List Container */}
+          <div
+            className={`chat-list-container ${selectedUserId ? 'mobile-hidden' : 'mobile-visible'}`}
+            style={{
+              width: 'var(--chat-list-width, 320px)',
+              backgroundColor: "var(--bg-surface)",
+              borderRadius: "var(--radius-xl)",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <ChatList
               currentUserId={user.id}
               activeId={selectedUserId}
@@ -122,10 +138,17 @@ function HomeContent() {
             />
           </div>
 
-          {/* Chat Window */}
+          {/* Chat Window Container */}
           <div
-            className={`${selectedUserId ? 'mobile-visible' : 'mobile-hidden'}`}
-            style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}
+            className={`chat-window-container ${selectedUserId ? 'mobile-visible' : 'mobile-hidden'}`}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              backgroundColor: "var(--bg-surface)",
+              borderRadius: "var(--radius-xl)",
+            }}
           >
             {selectedUserId && session ? (
               (() => {
@@ -163,22 +186,43 @@ function HomeContent() {
               </div>
             )}
 
-            {/* Mobile Back Button Overlay (Only visible on mobile when chat is open) */}
-            <style jsx>{`
-                @media (max-width: 768px) {
-                    .mobile-back-btn {
-                        display: flex;
-                    }
-                }
-                @media (min-width: 769px) {
-                    .mobile-back-btn {
-                        display: none;
-                    }
-                }
-             `}</style>
           </div>
         </div>
       </div>
+
+      {/* Mobile Styles */}
+      <style jsx>{`
+        @media (max-width: 768px) {
+            .chat-split-view {
+                margin: 0 !important;
+                gap: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                border: none !important;
+            }
+            .chat-list-container, .chat-window-container {
+                width: 100% !important;
+                height: 100% !important;
+                border-radius: 0 !important;
+                border: none !important;
+                margin: 0 !important;
+            }
+
+            /* Add padding for bottom nav - Matches AI Chat */
+            .chat-window-container {
+                padding-bottom: 50px !important;
+            } 
+
+            .mobile-back-btn {
+                display: flex;
+            }
+        }
+        @media (min-width: 769px) {
+            .mobile-back-btn {
+                display: none;
+            }
+        }
+      `}</style>
     </main>
   );
 }

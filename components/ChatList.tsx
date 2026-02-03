@@ -166,9 +166,8 @@ export function ChatList({
         <div
             className="flex flex-col bg-white"
             style={{
-                width: 'var(--chat-list-width)',
+                width: '100%',
                 height: '100%',
-                borderRight: '1px solid var(--border-light)',
             }}
         >
             {/* Header with Title and New Message Button */}

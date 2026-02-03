@@ -10,12 +10,9 @@ import {
   Smile,
   Paperclip,
   MoreVertical,
-  Search,
-  Phone,
-  Video,
-  Loader2,
   ArrowLeft,
   Info,
+  Loader2,
 } from "lucide-react";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { ContactInfoSidebar } from "./ContactInfoSidebar";
@@ -45,15 +42,17 @@ export default function ChatWindow({
     sendMessage: wsSendMessage,
     subscribeToSession,
     onMessage,
-    isConnected,
   } = usePusher(user?.id || null);
   const [inputValue, setInputValue] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const processedMessagesRef = useRef<Set<string>>(new Set());
@@ -176,7 +175,7 @@ export default function ChatWindow({
     } catch (error) {
       console.error("Error sending message:", error);
       setInputValue(content);
-      alert("Failed to send message. Please try again.");
+      setErrorMessage("Failed to send message. Please try again.");
     } finally {
       setSending(false);
     }
@@ -221,7 +220,7 @@ export default function ChatWindow({
       className="flex flex-col"
       style={{
         height: "100%",
-        backgroundColor: "var(--bg-main)",
+        backgroundColor: "var(--bg-surface)",
         overflow: "hidden",
         position: "relative",
       }}
@@ -533,6 +532,7 @@ export default function ChatWindow({
           padding: "var(--spacing-4) var(--spacing-6)",
           backgroundColor: "var(--bg-surface)",
           borderTop: "1px solid var(--border-light)",
+          flexShrink: 0,
         }}
       >
         <div
@@ -540,13 +540,13 @@ export default function ChatWindow({
             display: "flex",
             alignItems: "center",
             gap: "var(--spacing-3)",
-            padding: "var(--spacing-2) var(--spacing-4)",
+            padding: "var(--spacing-3) var(--spacing-4)",
             backgroundColor: "var(--bg-main)",
             borderRadius: "var(--radius-xl)",
           }}
         >
           {/* Emoji Picker */}
-          <div style={{ position: "relative" }} ref={emojiPickerRef}>
+          <div style={{ position: "relative", flexShrink: 0 }} ref={emojiPickerRef}>
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               style={{
@@ -586,23 +586,38 @@ export default function ChatWindow({
           </div>
 
           {/* Attachment Button */}
-          <button
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "var(--radius-md)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "none",
-              backgroundColor: "transparent",
-              color: "var(--text-secondary)",
-              cursor: "pointer",
-              transition: "all var(--transition-fast)",
-            }}
-          >
-            <Paperclip size={20} />
-          </button>
+          <>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setSelectedFile(file);
+                }
+              }}
+              style={{ display: "none" }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "var(--radius-md)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "none",
+                backgroundColor: "transparent",
+                color: "var(--text-secondary)",
+                cursor: "pointer",
+                transition: "all var(--transition-fast)",
+                flexShrink: 0,
+              }}
+            >
+              <Paperclip size={20} />
+            </button>
+          </>
 
           {/* Input Field */}
           <input
@@ -621,6 +636,7 @@ export default function ChatWindow({
               fontSize: "var(--font-size-base)",
               color: "var(--text-primary)",
               padding: "var(--spacing-2) 0",
+              minWidth: 0,
             }}
           />
 
@@ -630,14 +646,15 @@ export default function ChatWindow({
             disabled={!inputValue.trim() || sending}
             className="btn-primary"
             style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "var(--radius-md)",
+              width: "40px",
+              height: "40px",
+              borderRadius: "var(--radius-full)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               opacity: inputValue.trim() && !sending ? 1 : 0.5,
               cursor: inputValue.trim() && !sending ? "pointer" : "not-allowed",
+              flexShrink: 0,
             }}
           >
             {sending ? (
@@ -674,13 +691,8 @@ export default function ChatWindow({
         }
         
         /* Mobile Input Padding */
-        @media (max-width: 768px) {
-            .chat-input-container {
-                padding-bottom: 24px !important; /* Extra padding to avoid bottom nav overlap */
-            }
-        }
+        /* Padding removed here, handled by page.tsx container padding-bottom: 60px */
       `}</style>
-
       {/* Contact Info Sidebar */}
       <ContactInfoSidebar
         isOpen={showContactInfo}
@@ -691,7 +703,260 @@ export default function ChatWindow({
           picture: recipientPicture,
           email: recipientId, // Using recipientId as email for now
         }}
+        messages={messages}
       />
+
+      {/* File Upload Modal */}
+      {selectedFile && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              padding: "24px",
+              borderRadius: "var(--radius-lg)",
+              width: "90%",
+              maxWidth: "400px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              border: "1px solid var(--border-light)",
+            }}
+          >
+            <h3
+              style={{
+                marginTop: 0,
+                marginBottom: "16px",
+                fontSize: "var(--font-size-lg)",
+                fontWeight: "var(--font-weight-semibold)",
+                color: "var(--text-primary)",
+              }}
+            >
+              Send File?
+            </h3>
+
+            {/* Image Preview */}
+            {selectedFile.type.startsWith('image/') ? (
+              <div style={{
+                marginBottom: "16px",
+                borderRadius: "var(--radius-md)",
+                overflow: "hidden",
+                border: "1px solid var(--border-light)",
+                maxHeight: "200px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "var(--bg-main)"
+              }}>
+                <img
+                  src={URL.createObjectURL(selectedFile)}
+                  alt="Preview"
+                  style={{ maxWidth: "100%", maxHeight: "200px", objectFit: "contain" }}
+                />
+              </div>
+            ) : (
+              <div style={{
+                marginBottom: "16px",
+                padding: "20px",
+                borderRadius: "var(--radius-md)",
+                backgroundColor: "var(--bg-main)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "column",
+                gap: "8px"
+              }}>
+                <Paperclip size={32} color="var(--text-secondary)" />
+                <span style={{ fontSize: "var(--font-size-sm)", color: "var(--text-secondary)" }}>
+                  {selectedFile.type || 'Unknown file type'}
+                </span>
+              </div>
+            )}
+
+            <p
+              style={{
+                marginBottom: "24px",
+                color: "var(--text-secondary)",
+                fontSize: "var(--font-size-md)",
+                wordBreak: "break-all",
+                textAlign: "center"
+              }}
+            >
+              {selectedFile.name}
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => {
+                  setSelectedFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-light)",
+                  backgroundColor: "transparent",
+                  color: "var(--text-primary)",
+                  cursor: "pointer",
+                  fontSize: "var(--font-size-sm)",
+                  fontWeight: "var(--font-weight-medium)",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!selectedFile || !user) return;
+
+                  setSending(true);
+                  try {
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
+                    formData.append('sessionId', sessionId);
+
+                    const token = localStorage.getItem('token');
+                    if (!token) throw new Error('No auth token');
+
+                    const response = await fetch('/api/upload', {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: formData
+                    });
+
+                    if (!response.ok) {
+                      throw new Error('Upload failed');
+                    }
+
+                    const data = await response.json();
+                    // Send the file URL as a message
+                    await sendMessage(data.url, user.id);
+
+                    setSelectedFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  } catch (error) {
+                    console.error("Error uploading file:", error);
+                    setErrorMessage("Failed to upload file");
+                  } finally {
+                    setSending(false);
+                  }
+                }}
+                disabled={sending}
+                className="btn-primary"
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "var(--radius-md)",
+                  border: "none",
+                  backgroundColor: "var(--color-primary)",
+                  color: "white",
+                  cursor: sending ? "not-allowed" : "pointer",
+                  opacity: sending ? 0.7 : 1,
+                  fontSize: "var(--font-size-sm)",
+                  fontWeight: "var(--font-weight-medium)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                {sending ? (
+                  <>
+                    <div
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                        border: "2px solid currentColor",
+                        borderTopColor: "transparent",
+                        borderRadius: "var(--radius-full)",
+                        animation: "spin 1s linear infinite",
+                      }}
+                    />
+                    Sending...
+                  </>
+                ) : (
+                  "Send"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Error Modal */}
+      {errorMessage && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 110,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              padding: "24px",
+              borderRadius: "var(--radius-lg)",
+              width: "90%",
+              maxWidth: "400px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              border: "1px solid var(--border-light)",
+              textAlign: "center",
+            }}
+          >
+            <h3
+              style={{
+                marginTop: 0,
+                marginBottom: "12px",
+                fontSize: "var(--font-size-lg)",
+                fontWeight: "var(--font-weight-semibold)",
+                color: "var(--color-error, #ef4444)",
+              }}
+            >
+              Error
+            </h3>
+            <p
+              style={{
+                marginBottom: "20px",
+                color: "var(--text-secondary)",
+                fontSize: "var(--font-size-md)",
+              }}
+            >
+              {errorMessage}
+            </p>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="btn-primary"
+              style={{
+                padding: "8px 24px",
+                borderRadius: "var(--radius-md)",
+                border: "none",
+                backgroundColor: "var(--color-primary)",
+                color: "white",
+                cursor: "pointer",
+                fontSize: "var(--font-size-sm)",
+                fontWeight: "var(--font-weight-medium)",
+              }}
+            >
+              Okay
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

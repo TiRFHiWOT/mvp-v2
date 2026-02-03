@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ContactInfoSidebar } from "./ContactInfoSidebar";
-import { ConfirmationModal } from "./ConfirmationModal";
+import { SidebarMenu } from "./SidebarMenu";
 import { usePusher } from "@/hooks/usePusher";
 
 interface TopNavProps {
@@ -193,17 +193,6 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
         }
     };
 
-    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
-    const handleLogoutClick = () => {
-        setShowLogoutConfirm(true);
-    };
-
-    const handleConfirmLogout = () => {
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        router.push("/login");
-    };
 
 
 
@@ -813,10 +802,10 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
 
 
                     {/* User Avatar & Menu */}
-                    <div ref={userMenuRef} style={{ position: "relative" }}>
+                    <div style={{ position: "relative" }}>
                         <div
                             onClick={() => {
-                                setShowUserMenu(!showUserMenu);
+                                setShowUserMenu(true);
                                 setShowNotifications(false);
                             }}
                             style={{
@@ -868,154 +857,6 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                 }}
                             />
                         </div>
-
-                        {/* User Menu Dropdown */}
-                        {showUserMenu && (
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    top: "calc(100% + 8px)",
-                                    right: 0,
-                                    width: "260px",
-                                    backgroundColor: "var(--bg-surface)",
-                                    borderRadius: "12px",
-                                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
-                                    border: "1px solid var(--border-light)",
-                                    zIndex: 200,
-                                    overflow: "hidden",
-                                }}
-                            >
-                                {/* User Info */}
-                                <div
-                                    style={{
-                                        padding: "16px",
-                                        borderBottom: "1px solid var(--border-light)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "12px",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            width: "48px",
-                                            height: "48px",
-                                            borderRadius: "50%",
-                                            overflow: "hidden",
-                                            flexShrink: 0,
-                                        }}
-                                    >
-                                        {user?.picture ? (
-                                            <img
-                                                src={user.picture}
-                                                alt={user.name || "User"}
-                                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                            />
-                                        ) : (
-                                            <div
-                                                style={{
-                                                    width: "100%",
-                                                    height: "100%",
-                                                    backgroundColor: "var(--color-primary)",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    color: "white",
-                                                    fontSize: "18px",
-                                                    fontWeight: 600,
-                                                }}
-                                            >
-                                                {user?.name?.[0]?.toUpperCase() || "U"}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div
-                                            style={{
-                                                fontSize: "15px",
-                                                fontWeight: 600,
-                                                color: "var(--text-primary)",
-                                                marginBottom: "2px",
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                whiteSpace: "nowrap",
-                                            }}
-                                        >
-                                            {user?.name || "User"}
-                                        </div>
-                                        <div
-                                            style={{
-                                                fontSize: "13px",
-                                                color: "var(--text-secondary)",
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                whiteSpace: "nowrap",
-                                            }}
-                                        >
-                                            {user?.email || "user@example.com"}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Menu Items */}
-                                <div style={{ padding: "8px" }}>
-                                    <button
-                                        onClick={handleGoToProfile}
-                                        style={{
-                                            width: "100%",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "12px",
-                                            padding: "10px 12px",
-                                            border: "none",
-                                            backgroundColor: "transparent",
-                                            color: "var(--text-primary)",
-                                            fontSize: "14px",
-                                            cursor: "pointer",
-                                            borderRadius: "8px",
-                                            transition: "all var(--transition-fast)",
-                                            textAlign: "left",
-                                        }}
-                                        className="menu-item"
-                                    >
-                                        <User size={18} color="var(--text-secondary)" />
-                                        View Profile
-                                    </button>
-
-
-                                </div>
-
-                                {/* Logout */}
-                                <div
-                                    style={{
-                                        padding: "8px",
-                                        borderTop: "1px solid var(--border-light)",
-                                    }}
-                                >
-                                    <button
-                                        onClick={handleLogoutClick}
-                                        style={{
-                                            width: "100%",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "12px",
-                                            padding: "10px 12px",
-                                            border: "none",
-                                            backgroundColor: "transparent",
-                                            color: "#EF4444",
-                                            fontSize: "14px",
-                                            cursor: "pointer",
-                                            borderRadius: "8px",
-                                            transition: "all var(--transition-fast)",
-                                            textAlign: "left",
-                                        }}
-                                        className="menu-item logout-item"
-                                    >
-                                        <LogOut size={18} />
-                                        Log out
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 
@@ -1109,15 +950,10 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                 } : null}
             />
 
-            <ConfirmationModal
-                isOpen={showLogoutConfirm}
-                onClose={() => setShowLogoutConfirm(false)}
-                onConfirm={handleConfirmLogout}
-                title="Log out"
-                message="Are you sure you want to log out of your account?"
-                confirmText="Log out"
-                cancelText="Cancel"
-                type="danger"
+            {/* Sidebar Menu */}
+            <SidebarMenu
+                isOpen={showUserMenu}
+                onClose={() => setShowUserMenu(false)}
             />
         </>
     );

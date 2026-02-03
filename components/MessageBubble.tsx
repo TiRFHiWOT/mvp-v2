@@ -1,7 +1,7 @@
 "use client";
 
 import { Message } from "@/hooks/useMessages";
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck, FileText } from "lucide-react";
 
 interface MessageBubbleProps {
   message: Message;
@@ -19,6 +19,18 @@ export default function MessageBubble({
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  const isImage = (url: string) => {
+    if (!url) return false;
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    return url.startsWith('/uploads/') && imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
+  };
+
+  const isDocument = (url: string) => {
+    if (!url) return false;
+    const docExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'];
+    return url.startsWith('/uploads/') && docExtensions.some(ext => url.toLowerCase().endsWith(ext));
+  };
 
   return (
     <div
@@ -56,7 +68,62 @@ export default function MessageBubble({
               whiteSpace: "pre-wrap",
             }}
           >
-            {message.content}
+            {isImage(message.content) ? (
+              <img
+                src={message.content}
+                alt="Shared image"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "300px",
+                  borderRadius: "var(--radius-md)",
+                  display: "block",
+                  cursor: "pointer"
+                }}
+                onClick={() => window.open(message.content, '_blank')}
+              />
+            ) : isDocument(message.content) ? (
+              <a
+                href={message.content}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "8px",
+                  backgroundColor: "rgba(0,0,0,0.05)",
+                  borderRadius: "var(--radius-md)",
+                  textDecoration: "none",
+                  color: "inherit"
+                }}
+              >
+                <div style={{
+                  padding: "8px",
+                  backgroundColor: "var(--bg-card)",
+                  borderRadius: "var(--radius-md)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                  <FileText size={24} color="var(--color-primary)" />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden" }}>
+                  <span style={{
+                    fontSize: "var(--font-size-sm)",
+                    fontWeight: "500",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: "200px"
+                  }}>
+                    {message.content.split('/').pop()}
+                  </span>
+                  <span style={{ fontSize: "10px", opacity: 0.7 }}>Click to view</span>
+                </div>
+              </a>
+            ) : (
+              message.content
+            )}
           </div>
         </div>
         {showTimestamp && (

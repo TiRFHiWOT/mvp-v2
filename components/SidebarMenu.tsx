@@ -1,6 +1,6 @@
 "use client";
 
-import { X, ArrowLeft, FileText, Gift, Palette, LogOut } from "lucide-react";
+import { X, ArrowLeft, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -52,7 +52,7 @@ export function SidebarMenu({ isOpen, onClose }: SidebarMenuProps) {
                 }}
             />
 
-            {/* Drawer - Matching Figma exactly */}
+            {/* Drawer */}
             <div
                 style={{
                     position: "fixed",
@@ -134,32 +134,9 @@ export function SidebarMenu({ isOpen, onClose }: SidebarMenuProps) {
                         <ArrowLeft size={18} color="var(--text-secondary)" />
                         Go back to dashboard
                     </button>
-
-                    <button
-                        onClick={() => alert("Rename file feature")}
-                        style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            padding: "10px 12px",
-                            border: "none",
-                            backgroundColor: "transparent",
-                            color: "var(--text-primary)",
-                            fontSize: "14px",
-                            cursor: "pointer",
-                            borderRadius: "8px",
-                            transition: "all var(--transition-fast)",
-                            textAlign: "left",
-                        }}
-                        className="menu-item"
-                    >
-                        <FileText size={18} color="var(--text-secondary)" />
-                        Rename file
-                    </button>
                 </div>
 
-                {/* User Info Section with Credits - Matching Figma exactly */}
+                {/* User Info Section */}
                 {user && (
                     <div
                         style={{
@@ -183,112 +160,15 @@ export function SidebarMenu({ isOpen, onClose }: SidebarMenuProps) {
                             style={{
                                 fontSize: "12px",
                                 color: "var(--text-secondary)",
-                                marginBottom: "12px",
                             }}
                         >
                             {user.email || "testing@email.com"}
                         </div>
-
-                        {/* Credits Progress - Matching Figma */}
-                        <div>
-                            <div
-                                style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "baseline",
-                                    marginBottom: "6px",
-                                }}
-                            >
-                                <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--text-primary)" }}>
-                                    20 left
-                                </span>
-                                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                                    6h 24m
-                                </span>
-                            </div>
-                            <div
-                                style={{
-                                    height: "6px",
-                                    backgroundColor: "#E5E7EB",
-                                    borderRadius: "100px",
-                                    overflow: "hidden",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        height: "100%",
-                                        width: "65%",
-                                        backgroundColor: "var(--color-primary)",
-                                        borderRadius: "100px",
-                                    }}
-                                />
-                            </div>
-                            <div
-                                style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    marginTop: "6px",
-                                }}
-                            >
-                                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                                    5 of 25 used today
-                                </span>
-                                <span style={{ fontSize: "12px", color: "var(--color-primary)", fontWeight: 500 }}>
-                                    +25 tomorrow
-                                </span>
-                            </div>
-                        </div>
                     </div>
                 )}
 
-                {/* Additional Menu Items */}
+                {/* Logout Button */}
                 <div style={{ padding: "8px", borderTop: "1px solid var(--border-light)", marginTop: "8px" }}>
-                    <button
-                        onClick={() => alert("Win free credits feature")}
-                        style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            padding: "10px 12px",
-                            border: "none",
-                            backgroundColor: "transparent",
-                            color: "var(--text-primary)",
-                            fontSize: "14px",
-                            cursor: "pointer",
-                            borderRadius: "8px",
-                            transition: "all var(--transition-fast)",
-                            textAlign: "left",
-                        }}
-                        className="menu-item"
-                    >
-                        <Gift size={18} color="var(--text-secondary)" />
-                        Win free credits
-                    </button>
-
-                    <button
-                        onClick={() => alert("Theme style feature")}
-                        style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            padding: "10px 12px",
-                            border: "none",
-                            backgroundColor: "transparent",
-                            color: "var(--text-primary)",
-                            fontSize: "14px",
-                            cursor: "pointer",
-                            borderRadius: "8px",
-                            transition: "all var(--transition-fast)",
-                            textAlign: "left",
-                        }}
-                        className="menu-item"
-                    >
-                        <Palette size={18} color="var(--text-secondary)" />
-                        Theme Style
-                    </button>
-
                     <button
                         onClick={handleLogoutClick}
                         style={{
@@ -319,7 +199,6 @@ export function SidebarMenu({ isOpen, onClose }: SidebarMenuProps) {
           }
         `}</style>
             </div>
-
 
             <ConfirmationModal
                 isOpen={showLogoutConfirm}
