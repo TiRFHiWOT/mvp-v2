@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { Image, FileText, Upload, Download, Trash2, Search } from "lucide-react";
+import { Image, FileText, Upload, Download, Trash2, Search, Loader2 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { TopNav } from "@/components/TopNav";
@@ -153,8 +153,14 @@ export default function MediaPage() {
                 height: "100vh",
                 backgroundColor: "var(--bg-main)",
             }}>
-                <div style={{ fontSize: "var(--font-size-lg)", color: "var(--text-secondary)" }}>
-                    Loading...
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100vh",
+                    backgroundColor: "var(--bg-main)",
+                }}>
+                    <Loader2 className="animate-spin" size={48} style={{ color: "var(--color-primary)" }} />
                 </div>
             </div>
         );
@@ -302,8 +308,8 @@ export default function MediaPage() {
                 {/* Media Grid */}
                 <div className="media-grid-container" style={{ flex: 1, padding: "var(--spacing-8)", overflow: "auto" }}>
                     {loadingFiles ? (
-                        <div style={{ textAlign: "center", padding: "var(--spacing-10)", color: "var(--text-secondary)" }}>
-                            Loading files...
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: "var(--spacing-10)" }}>
+                            <Loader2 className="animate-spin" size={32} style={{ color: "var(--color-primary)" }} />
                         </div>
                     ) : filteredItems.length === 0 ? (
                         <div

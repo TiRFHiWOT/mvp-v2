@@ -178,9 +178,8 @@ function HomeContent() {
                 }}
               >
                 {loadingSession ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Loader2 className="animate-spin" size={32} style={{ color: "var(--color-primary)" }} />
-                    <span>Loading chat...</span>
                   </div>
                 ) : "Select a user to start chatting"}
               </div>

@@ -1,0 +1,58 @@
+# Implementation Plan - New MVP Chat App (Figma 1:1)
+
+This plan outlines the steps to build a premium, "conversion-focused" MVP chat application, perfectly matching the provided Figma design and including a "Chat with AI" bonus feature.
+
+## Goal Description
+Create a new Next.js application in `mvp-v2` (inside the existing `ChatApp` directory) that replicates the Figma design with high fidelity. The app will feature real-time messaging, Google Authentication, and an AI chat interface.
+
+## User Review Required
+> [!IMPORTANT]
+> **Project Location**: I will create the new project in a subfolder `mvp-v2` inside the current `ChatApp` directory to keep it organized and within workspace limits.
+>
+> **AI Feature**: The "Chat with AI" feature will be implemented with a **Mock AI** (simulated responses) initially to ensure the functional interface works without requiring immediate paid API keys. It can be easily connected to OpenAI/Gemini later.
+>
+> **Auth Library**: usage of `@react-oauth/google` is confirmed.
+
+## Proposed Changes
+
+### Setup & Infrastructure
+#### [NEW] [mvp-v2/](file:///home/aaa/upwork/ChatApp/mvp-v2)
+- Initialize new Next.js 14 project (App Router).
+- Install dependencies: [prisma](file:///home/aaa/upwork/ChatApp/prisma/schema.prisma), `@prisma/client`, `pusher`, `pusher-js`, `@react-oauth/google`, `lucide-react`, `date-fns`.
+- Setup Tailwind CSS with the specific **Mint/Teal** color palette extracted from Figma.
+
+### Database (Prisma)
+- Define [User](file:///home/aaa/upwork/ChatApp/components/UserList.tsx#12-382) model (id, email, name, picture, status).
+- Define `Message` model (id, content, senderId, receiverId, createdAt).
+- Define `ChatSession` model? (Or just infer from messages). *Plan: Explicit Session model for performance.*
+
+### Authentication
+- Implement Login Page adhering to "Conversion-Focused" design (Clean, simple, "Continue with Google").
+- Configure `@react-oauth/google` provider.
+
+### Core Features
+- **User List**:
+    - Real-time "Online/Offline" status using Pusher presence channels.
+    - Search functionality.
+- **Chat Interface (1:1)**:
+    - 1:1 Figma match: 3-column layout (Sidebar, List, Chat).
+    - Message Bubbles: Specific rounded styles, "Mint" for self, "White" for others.
+    - Real-time message delivery.
+- **Chat with AI**:
+    - Detailed "AI" user in the list (pinned or separate section).
+    - Mock backend to reply to user messages for demonstration.
+
+### Documentation
+- Create `README_NON_TECHNICAL.md`: A simple guide explaining "What this is", "How it works", and "Tools used" for non-tech stakeholders.
+
+## Verification Plan
+
+### Automated Tests
+- `npm run lint`: Ensure no code style issues.
+- `npm run build`: Verify successful production build.
+
+### Manual Verification
+1.  **Design Check**: Compare split-screen of App vs Figma Screenshots (captured previously) to ensure 1:1 visual match.
+2.  **Auth Flow**: Login with Google, verify User creation in DB.
+3.  **Real-Time**: Open two browser windows (Incognito vs Normal), chat between users, verify instant updates without refresh.
+4.  **AI Chat**: Send message to "AI Bot", verify simulated response appears.

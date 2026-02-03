@@ -775,26 +775,6 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                 </div>
 
                                 {/* Footer */}
-                                <div
-                                    style={{
-                                        padding: "12px 16px",
-                                        borderTop: "1px solid var(--border-light)",
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    <button
-                                        style={{
-                                            background: "none",
-                                            border: "none",
-                                            color: "var(--color-primary)",
-                                            fontSize: "13px",
-                                            fontWeight: 500,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        View all notifications
-                                    </button>
-                                </div>
                             </div>
                         )}
                     </div>
