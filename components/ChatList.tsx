@@ -419,7 +419,7 @@ export function ChatList({
                                                         color: 'var(--text-primary)',
                                                     }}
                                                 >
-                                                    {user.name}
+                                                    {user.name || user.email || "Unknown User"}
                                                 </span>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     {user.lastSeen && (

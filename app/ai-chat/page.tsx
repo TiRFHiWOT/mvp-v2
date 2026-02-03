@@ -357,7 +357,7 @@ export default function AIChat() {
                                             textOverflow: "ellipsis",
                                             whiteSpace: "nowrap",
                                         }}>
-                                            {session.title}
+                                            {session.title || "Untitled Chat"}
                                         </span>
                                         <button
                                             onClick={(e) => deleteSession(session.id, e)}
