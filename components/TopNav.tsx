@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ContactInfoSidebar } from "./ContactInfoSidebar";
+import { ConfirmationModal } from "./ConfirmationModal";
 
 interface TopNavProps {
     title?: string;
@@ -161,12 +162,16 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
         }
     };
 
-    const handleLogout = () => {
-        if (confirm("Are you sure you want to logout?")) {
-            localStorage.removeItem("user");
-            localStorage.removeItem("token");
-            router.push("/login");
-        }
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+    const handleLogoutClick = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const handleConfirmLogout = () => {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        router.push("/login");
     };
 
 
@@ -870,7 +875,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                     }}
                                 >
                                     <button
-                                        onClick={handleLogout}
+                                        onClick={handleLogoutClick}
                                         style={{
                                             width: "100%",
                                             display: "flex",
@@ -930,6 +935,17 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                     picture: user.picture,
                     email: user.email || "user@example.com"
                 } : null}
+            />
+
+            <ConfirmationModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleConfirmLogout}
+                title="Log out"
+                message="Are you sure you want to log out of your account?"
+                confirmText="Log out"
+                cancelText="Cancel"
+                type="danger"
             />
         </>
     );

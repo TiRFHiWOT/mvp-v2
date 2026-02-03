@@ -3,6 +3,8 @@
 import { X, ArrowLeft, FileText, Gift, Palette, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ConfirmationModal } from "./ConfirmationModal";
 
 interface SidebarMenuProps {
     isOpen: boolean;
@@ -13,12 +15,16 @@ export function SidebarMenu({ isOpen, onClose }: SidebarMenuProps) {
     const { user } = useAuth();
     const router = useRouter();
 
-    const handleLogout = () => {
-        if (confirm("Are you sure you want to logout?")) {
-            localStorage.removeItem("user");
-            localStorage.removeItem("token");
-            router.push("/login");
-        }
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+    const handleLogoutClick = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const handleConfirmLogout = () => {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        router.push("/login");
     };
 
     const handleGoToDashboard = () => {
@@ -284,7 +290,7 @@ export function SidebarMenu({ isOpen, onClose }: SidebarMenuProps) {
                     </button>
 
                     <button
-                        onClick={handleLogout}
+                        onClick={handleLogoutClick}
                         style={{
                             width: "100%",
                             display: "flex",
@@ -313,6 +319,18 @@ export function SidebarMenu({ isOpen, onClose }: SidebarMenuProps) {
           }
         `}</style>
             </div>
+
+
+            <ConfirmationModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={handleConfirmLogout}
+                title="Log out"
+                message="Are you sure you want to log out of your account?"
+                confirmText="Log out"
+                cancelText="Cancel"
+                type="danger"
+            />
         </>
     );
 }

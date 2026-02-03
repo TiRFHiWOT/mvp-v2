@@ -318,7 +318,6 @@ export default function LoginPage() {
                                 <GoogleLogin
                                     onSuccess={handleSuccess}
                                     onError={() => setError("Login Failed")}
-                                    useOneTap
                                     theme="filled_blue"
                                     shape="pill"
                                     width="100%"

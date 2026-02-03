@@ -6,6 +6,7 @@ import { Image, FileText, Upload, Download, Trash2, Search } from "lucide-react"
 import { useEffect, useState, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { TopNav } from "@/components/TopNav";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 type MediaTab = "image" | "document" | "all";
 
@@ -100,9 +101,18 @@ export default function MediaPage() {
         }
     };
 
-    const handleDelete = async (fileId: string, fileName: string) => {
-        if (!confirm(`Delete ${fileName}?`)) return;
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; fileId: string; fileName: string }>({
+        isOpen: false,
+        fileId: "",
+        fileName: "",
+    });
 
+    const handleDeleteClick = (fileId: string, fileName: string) => {
+        setDeleteModal({ isOpen: true, fileId, fileName });
+    };
+
+    const handleDeleteConfirm = async () => {
+        const { fileId, fileName } = deleteModal;
         try {
             const token = localStorage.getItem("token");
             const response = await fetch(`/api/media?id=${fileId}`, {
@@ -423,7 +433,7 @@ export default function MediaPage() {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleDelete(item.id, item.originalName);
+                                                    handleDeleteClick(item.id, item.originalName);
                                                 }}
                                                 style={{
                                                     flex: 1,
@@ -473,6 +483,17 @@ export default function MediaPage() {
                     color: #EF4444 !important;
                 }
             `}</style>
+
+            <ConfirmationModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={handleDeleteConfirm}
+                title="Delete File"
+                message={`Are you sure you want to delete "${deleteModal.fileName}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+            />
         </div>
     );
 }
