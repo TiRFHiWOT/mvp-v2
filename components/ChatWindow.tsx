@@ -14,9 +14,12 @@ import {
   Phone,
   Video,
   Loader2,
+  ArrowLeft,
+  Info,
 } from "lucide-react";
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { ContactInfoSidebar } from "./ContactInfoSidebar";
+import { useRouter } from "next/navigation";
 
 interface ChatWindowProps {
   sessionId: string;
@@ -25,6 +28,7 @@ interface ChatWindowProps {
   recipientPicture?: string;
   recipientOnline?: boolean;
   currentUser: User;
+  onBack?: () => void;
 }
 
 export default function ChatWindow({
@@ -34,6 +38,7 @@ export default function ChatWindow({
   recipientPicture,
   recipientOnline = false,
   currentUser: user,
+  onBack,
 }: ChatWindowProps) {
   const { messages, loading, sendMessage, addMessage } = useMessages(sessionId);
   const {
@@ -46,10 +51,21 @@ export default function ChatWindow({
   const [sending, setSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const processedMessagesRef = useRef<Set<string>>(new Set());
+  const router = useRouter();
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      router.push('/');
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -63,9 +79,15 @@ export default function ChatWindow({
       ) {
         setShowEmojiPicker(false);
       }
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node)
+      ) {
+        setShowMenu(false);
+      }
     };
 
-    if (showEmojiPicker) {
+    if (showEmojiPicker || showMenu) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
@@ -110,6 +132,29 @@ export default function ChatWindow({
             name: "Other User",
           },
         });
+
+        // If the message is from the recipient, mark it as read on the server
+        if (data.senderId === recipientId) {
+          const markAsRead = async () => {
+            try {
+              const token = localStorage.getItem("token");
+              if (token) {
+                await fetch("/api/notifications", {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ senderId: recipientId }),
+                });
+                window.dispatchEvent(new CustomEvent('notifications-refetched'));
+              }
+            } catch (err) {
+              console.error("Error marking message as read:", err);
+            }
+          };
+          markAsRead();
+        }
       }
     });
 
@@ -175,8 +220,10 @@ export default function ChatWindow({
     <div
       className="flex flex-col"
       style={{
-        height: "100vh",
+        height: "100%",
         backgroundColor: "var(--bg-main)",
+        overflow: "hidden",
+        position: "relative",
       }}
     >
       {/* Header */}
@@ -191,6 +238,24 @@ export default function ChatWindow({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-3)" }}>
+          <button
+            onClick={handleBack}
+            className="mobile-back-btn"
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '8px',
+              marginRight: '-8px',
+              cursor: 'pointer',
+              color: 'var(--text-secondary)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%'
+            }}
+          >
+            <ArrowLeft size={20} />
+          </button>
+
           {/* Avatar */}
           <div className="avatar avatar-md" style={{ position: "relative" }}>
             {recipientPicture ? (
@@ -240,26 +305,70 @@ export default function ChatWindow({
         {/* Header Actions */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           {/* Actions removed as requested */}
-          <button
-            className="icon-btn"
-            onClick={() => setShowContactInfo(true)}
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "none",
-              backgroundColor: "transparent",
-              color: "var(--text-secondary)",
-              cursor: "pointer",
-              transition: "all var(--transition-fast)",
-            }}
-            title="More options"
-          >
-            <MoreVertical size={20} />
-          </button>
+          <div style={{ position: "relative" }} ref={menuRef}>
+            <button
+              className="icon-btn"
+              onClick={() => setShowMenu(!showMenu)}
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "none",
+                backgroundColor: showMenu ? "var(--bg-main)" : "transparent",
+                color: "var(--text-secondary)",
+                cursor: "pointer",
+                transition: "all var(--transition-fast)",
+              }}
+              title="More options"
+            >
+              <MoreVertical size={20} />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  marginTop: "8px",
+                  backgroundColor: "var(--bg-surface)",
+                  border: "1px solid var(--border-light)",
+                  borderRadius: "var(--radius-lg)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  width: "180px",
+                  zIndex: 50,
+                  overflow: "hidden",
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setShowContactInfo(true);
+                    setShowMenu(false);
+                  }}
+                  className="menu-item"
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    textAlign: "left",
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    transition: "background-color 0.2s",
+                  }}
+                >
+                  <Info size={16} />
+                  Contact Info
+                </button>
+                {/* Add more items here if needed */}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -419,6 +528,7 @@ export default function ChatWindow({
 
       {/* Input Area */}
       <div
+        className="chat-input-container"
         style={{
           padding: "var(--spacing-4) var(--spacing-6)",
           backgroundColor: "var(--bg-surface)",
@@ -553,10 +663,21 @@ export default function ChatWindow({
           background-color: var(--bg-main) !important;
         }
 
+        .menu-item:hover {
+            background-color: var(--bg-main) !important;
+        }
+
         @keyframes spin {
           to {
             transform: rotate(360deg);
           }
+        }
+        
+        /* Mobile Input Padding */
+        @media (max-width: 768px) {
+            .chat-input-container {
+                padding-bottom: 24px !important; /* Extra padding to avoid bottom nav overlap */
+            }
         }
       `}</style>
 

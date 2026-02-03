@@ -79,10 +79,9 @@ export async function POST(
       },
     });
 
-    // Create notification for the recipient
     if (recipientId) {
       try {
-        await prisma.notification.create({
+        const notification = await prisma.notification.create({
           data: {
             userId: recipientId,
             senderId: senderId,
@@ -90,9 +89,26 @@ export async function POST(
             title: `New message from ${message.sender?.name || "User"}`,
             description: content.length > 50 ? content.substring(0, 50) + "..." : content,
           },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                picture: true,
+              },
+            },
+          },
         });
+
+        // Trigger Pusher event for the notification
+        await pusherServer.trigger(
+          `private-user-${recipientId}`,
+          "new-notification",
+          notification
+        );
+
       } catch (notifError) {
-        console.error("Error creating notification:", notifError);
+        console.error("Error creating/sending notification:", notifError);
       }
     }
 

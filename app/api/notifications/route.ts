@@ -94,6 +94,15 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ success: true, message: "All notifications marked as read" });
         }
 
+        const { senderId } = body;
+        if (senderId) {
+            await prisma.notification.updateMany({
+                where: { userId: user.id, senderId: senderId, read: false },
+                data: { read: true },
+            });
+            return NextResponse.json({ success: true, message: "Notifications from sender marked as read" });
+        }
+
         if (id) {
             const notification = await prisma.notification.findUnique({
                 where: { id },

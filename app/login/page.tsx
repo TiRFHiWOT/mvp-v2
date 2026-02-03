@@ -100,6 +100,7 @@ export default function LoginPage() {
             />
 
             <div
+                className="login-container"
                 style={{
                     display: "flex",
                     width: "100%",
@@ -114,6 +115,7 @@ export default function LoginPage() {
             >
                 {/* Left Side - Marketing Content */}
                 <div
+                    className="marketing-section"
                     style={{
                         flex: 1,
                         color: "white",
@@ -250,6 +252,7 @@ export default function LoginPage() {
 
                 {/* Right Side - Login Form */}
                 <div
+                    className="login-form-section"
                     style={{
                         width: "480px",
                         flexShrink: 0,
@@ -403,12 +406,36 @@ export default function LoginPage() {
           }
         }
 
-        @media (max-width: 768px) {
-          div:first-child > div {
-            flex-direction: column;
+        @media (max-width: 900px) {
+          .login-container {
+            flex-direction: column !important;
+            padding: 20px !important;
+            gap: 40px !important;
           }
-          div:first-child > div > div:first-child {
-            display: none;
+          
+          .marketing-section {
+            text-align: center;
+            align-items: center;
+          }
+
+          .marketing-section div[style*="flex-start"] {
+             align-items: center !important;
+             justify-content: center !important;
+          }
+
+          .login-form-section {
+            width: 100% !important;
+            max-width: 480px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .marketing-section {
+            display: none !important;
+          }
+          
+          .login-container {
+             justify-content: center;
           }
         }
       `}</style>

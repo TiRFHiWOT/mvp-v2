@@ -177,17 +177,18 @@ export default function MediaPage() {
         <div style={{ display: "flex", height: "100vh", backgroundColor: "var(--bg-main)" }}>
             <Sidebar />
 
-            <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+            <div className="media-content-wrapper" style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
                 <TopNav title="Media & Files" />
 
                 {/* Header */}
                 <div
+                    className="media-header"
                     style={{
                         padding: "var(--spacing-4) var(--spacing-8)",
                         backgroundColor: "var(--bg-surface)",
                     }}
                 >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--spacing-4)" }}>
+                    <div className="media-header-top" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--spacing-4)" }}>
                         <div>
                             <h1
                                 style={{
@@ -260,6 +261,7 @@ export default function MediaPage() {
 
                 {/* Tabs */}
                 <div
+                    className="media-tabs"
                     style={{
                         display: "flex",
                         gap: "var(--spacing-2)",
@@ -288,7 +290,7 @@ export default function MediaPage() {
                                     cursor: "pointer",
                                     transition: "all var(--transition-fast)",
                                 }}
-                                className="tab-button"
+                                className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
                             >
                                 <Icon size={16} />
                                 {tab.label}
@@ -298,7 +300,7 @@ export default function MediaPage() {
                 </div>
 
                 {/* Media Grid */}
-                <div style={{ flex: 1, padding: "var(--spacing-8)", overflow: "auto" }}>
+                <div className="media-grid-container" style={{ flex: 1, padding: "var(--spacing-8)", overflow: "auto" }}>
                     {loadingFiles ? (
                         <div style={{ textAlign: "center", padding: "var(--spacing-10)", color: "var(--text-secondary)" }}>
                             Loading files...
@@ -331,6 +333,7 @@ export default function MediaPage() {
                         </div>
                     ) : (
                         <div
+                            className="media-grid"
                             style={{
                                 display: "grid",
                                 gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
@@ -462,8 +465,15 @@ export default function MediaPage() {
             </div>
 
             <style jsx>{`
-                .tab-button:hover {
-                    background-color: ${activeTab === "all" ? "var(--color-primary)" : "var(--bg-main)"} !important;
+                .tab-button:not(.active):hover {
+                    background-color: var(--bg-main) !important;
+                    color: var(--text-primary) !important;
+                }
+
+                .tab-button.active:hover {
+                    background-color: var(--color-primary) !important;
+                    opacity: 0.9;
+                    color: white !important;
                 }
 
                 .media-card:hover {
@@ -481,6 +491,29 @@ export default function MediaPage() {
                 .delete-btn:hover {
                     border-color: #EF4444 !important;
                     color: #EF4444 !important;
+                }
+
+                @media (max-width: 768px) {
+                    .media-content-wrapper {
+                        padding-bottom: 70px !important; /* Bottom Nav Space */
+                    }
+                    .media-header, .media-tabs, .media-grid-container {
+                        padding-left: var(--spacing-4) !important;
+                        padding-right: var(--spacing-4) !important;
+                    }
+                    .media-header-top {
+                        flex-direction: column !important;
+                        align-items: stretch !important;
+                        gap: var(--spacing-4) !important;
+                    }
+                    .media-tabs {
+                        overflow-x: auto;
+                        padding-bottom: var(--spacing-2) !important;
+                    }
+                    .media-grid {
+                        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+                        gap: var(--spacing-4) !important;
+                    }
                 }
             `}</style>
 

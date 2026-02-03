@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePusher } from "@/hooks/usePusher";
@@ -23,6 +23,7 @@ export default function Home() {
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -30,6 +31,19 @@ export default function Home() {
       router.push("/login");
     }
   }, [user, authLoading, router]);
+
+  // Handle URL query params for user selection
+  useEffect(() => {
+    const userIdFromUrl = searchParams.get('userId');
+    console.log("Home useEffect: userIdFromUrl =", userIdFromUrl, "selectedUserId =", selectedUserId);
+    if (userIdFromUrl && userIdFromUrl !== selectedUserId) {
+      console.log("Setting selectedUserId to", userIdFromUrl);
+      setSelectedUserId(userIdFromUrl);
+      // Optional: Clear the query param so refreshing doesn't force this user
+      // But keeping it allows sharing links to chats.
+      // Let's keep it for now as "deep linking".
+    }
+  }, [searchParams, selectedUserId]);
 
   // Fetch session when selectedUserId changes
   useEffect(() => {
@@ -81,7 +95,7 @@ export default function Home() {
     <main
       style={{
         display: "flex",
-        height: "100vh",
+        height: "100dvh",
         width: "100%",
         overflow: "hidden",
         backgroundColor: "var(--bg-main)",
@@ -93,15 +107,26 @@ export default function Home() {
       {/* Main Content Area */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Top Navigation */}
-        <TopNav title="Message" />
+        <div className={selectedUserId ? "mobile-hidden" : ""}>
+          <TopNav title="Message" />
+        </div>
 
         {/* Chat Area */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
           {/* Chat List */}
-          <ChatList currentUserId={user.id} onSelectChat={setSelectedUserId} />
+          <div className={`${selectedUserId ? 'mobile-hidden' : 'mobile-visible'}`}>
+            <ChatList
+              currentUserId={user.id}
+              activeId={selectedUserId}
+              onSelectChat={setSelectedUserId}
+            />
+          </div>
 
           {/* Chat Window */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div
+            className={`${selectedUserId ? 'mobile-visible' : 'mobile-hidden'}`}
+            style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}
+          >
             {selectedUserId && session ? (
               (() => {
                 const recipient = session.user1.id === user.id ? session.user2 : session.user1;
@@ -113,11 +138,13 @@ export default function Home() {
                     recipientPicture={recipient.picture}
                     recipientOnline={onlineUsers.has(recipient.id)}
                     currentUser={user}
+                    onBack={() => setSelectedUserId(null)}
                   />
                 );
               })()
             ) : (
               <div
+                className="mobile-hidden"
                 style={{
                   display: "flex",
                   flex: 1,
@@ -135,6 +162,20 @@ export default function Home() {
                 ) : "Select a user to start chatting"}
               </div>
             )}
+
+            {/* Mobile Back Button Overlay (Only visible on mobile when chat is open) */}
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    .mobile-back-btn {
+                        display: flex;
+                    }
+                }
+                @media (min-width: 769px) {
+                    .mobile-back-btn {
+                        display: none;
+                    }
+                }
+             `}</style>
           </div>
         </div>
       </div>

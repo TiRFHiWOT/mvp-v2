@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Sidebar } from "@/components/Sidebar";
 import { TopNav } from "@/components/TopNav";
-import { Send, Sparkles, Plus, Trash2, MessageSquare } from "lucide-react";
+import { Send, Sparkles, Plus, Trash2, MessageSquare, X } from "lucide-react";
 import { useState, useRef } from "react";
 
 interface Message {
@@ -31,6 +31,7 @@ export default function AIChat() {
     const [inputValue, setInputValue] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+    const [showHistory, setShowHistory] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Helper to get auth headers
@@ -260,25 +261,30 @@ export default function AIChat() {
         <div style={{ display: "flex", height: "100vh", backgroundColor: "var(--bg-main)" }}>
             <Sidebar />
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div className="ai-content-wrapper" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
                 <TopNav title="AI Chat" />
 
-                <div style={{ flex: 1, display: "flex", margin: "var(--spacing-4)", gap: "var(--spacing-4)", overflow: "hidden" }}>
+                <div className="ai-split-view" style={{ flex: 1, display: "flex", margin: "var(--spacing-4)", gap: "var(--spacing-4)", overflow: "hidden", position: "relative" }}>
                     {/* Chat History Sidebar */}
-                    <div style={{
-                        width: "260px",
-                        backgroundColor: "var(--bg-surface)",
-                        borderRadius: "var(--radius-xl)",
-                        display: "flex",
-                        flexDirection: "column",
-                        overflow: "hidden",
-                    }}>
+                    <div
+                        className={`ai-history-sidebar ${showHistory ? 'open' : ''}`}
+                        style={{
+                            width: "260px",
+                            backgroundColor: "var(--bg-surface)",
+                            borderRadius: "var(--radius-xl)",
+                            display: "flex",
+                            flexDirection: "column",
+                            overflow: "hidden",
+                        }}>
                         {/* New Chat Button */}
-                        <div style={{ padding: "var(--spacing-4)" }}>
+                        <div style={{ padding: "var(--spacing-4)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <button
-                                onClick={createNewSession}
+                                onClick={() => {
+                                    createNewSession();
+                                    setShowHistory(false);
+                                }}
                                 style={{
-                                    width: "100%",
+                                    flex: 1,
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
@@ -296,6 +302,20 @@ export default function AIChat() {
                                 <Plus size={18} />
                                 New Chat
                             </button>
+                            {/* Close button for mobile */}
+                            <button
+                                className="mobile-close-history"
+                                onClick={() => setShowHistory(false)}
+                                style={{
+                                    display: "none",
+                                    background: "none",
+                                    border: "none",
+                                    marginLeft: "8px",
+                                    color: "var(--text-muted)",
+                                }}
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
 
                         {/* Sessions List */}
@@ -312,7 +332,10 @@ export default function AIChat() {
                                 sessions.map((session) => (
                                     <div
                                         key={session.id}
-                                        onClick={() => selectSession(session.id)}
+                                        onClick={() => {
+                                            selectSession(session.id);
+                                            setShowHistory(false);
+                                        }}
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -358,14 +381,16 @@ export default function AIChat() {
                     </div>
 
                     {/* Chat Area */}
-                    <div style={{
-                        flex: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        backgroundColor: "var(--bg-surface)",
-                        borderRadius: "var(--radius-xl)",
-                        overflow: "hidden",
-                    }}>
+                    <div
+                        className="ai-chat-area"
+                        style={{
+                            flex: 1,
+                            display: "flex",
+                            flexDirection: "column",
+                            backgroundColor: "var(--bg-surface)",
+                            borderRadius: "var(--radius-xl)",
+                            overflow: "hidden",
+                        }}>
                         {/* Header */}
                         <div style={{
                             display: "flex",
@@ -374,6 +399,22 @@ export default function AIChat() {
                             padding: "var(--spacing-4) var(--spacing-6)",
                             borderBottom: "1px solid var(--border-light)",
                         }}>
+                            {/* Mobile History Toggle */}
+                            <button
+                                className="mobile-history-toggle"
+                                onClick={() => setShowHistory(true)}
+                                style={{
+                                    display: "none",
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    color: "var(--text-primary)",
+                                    padding: "4px",
+                                    marginRight: "4px",
+                                }}
+                            >
+                                <MessageSquare size={20} />
+                            </button>
                             <div style={{
                                 width: "44px",
                                 height: "44px",
@@ -557,6 +598,70 @@ export default function AIChat() {
                     animation: typing 1s infinite;
                     font-size: 20px;
                     color: var(--text-muted);
+                }
+
+                /* Mobile Responsiveness */
+                @media (max-width: 768px) {
+                    .ai-split-view {
+                        flex-direction: column !important;
+                        margin: 0 !important;
+                        border-radius: 0 !important;
+                    }
+
+                    .ai-chat-area {
+                        border-radius: 0 !important;
+                        padding-bottom: 60px !important; /* Space for Bottom Nav */
+                    }
+
+                    .ai-history-sidebar {
+                        position: absolute !important;
+                        top: 0;
+                        left: 0;
+                        bottom: 60px; /* Stop above bottom nav */
+                        width: 85% !important;
+                        height: auto !important;
+                        z-index: 50;
+                        transform: translateX(-110%);
+                        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        box-shadow: 4px 0 16px rgba(0,0,0,0.1);
+                        border-radius: 0 !important;
+                    }
+
+                    .ai-history-sidebar.open {
+                        transform: translateX(0);
+                    }
+                    
+                    /* Overlay when sidebar is open */
+                    .ai-split-view::after {
+                        content: '';
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0,0,0,0.4);
+                        z-index: 40;
+                        display: none;
+                        opacity: 0;
+                        transition: opacity 0.3s;
+                    } 
+                    
+                    /* We can't easily target the pseudo-element state from JS without a parent class. 
+                       Let's just use the sidebar transform logic. 
+                       Use a separate overlay div if possible, or just rely on the shadow.
+                    */
+
+                    .mobile-history-toggle {
+                        display: block !important;
+                    }
+                    
+                    .mobile-close-history {
+                        display: block !important;
+                    }
+                    
+                    .ai-content-wrapper {
+                        padding-bottom: 0 !important;
+                    }
                 }
             `}</style>
         </div>

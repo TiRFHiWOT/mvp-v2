@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { usePusher } from "./usePusher";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "./useAuth";
 
 export function useUnreadMessages(currentUserId: string | null) {
@@ -10,7 +10,8 @@ export function useUnreadMessages(currentUserId: string | null) {
     new Map()
   );
   const pathname = usePathname();
-  const { subscribeToSession, onMessage } = usePusher(currentUserId || null);
+  const searchParams = useSearchParams();
+  const { subscribeToChannel, subscribeToSession, onMessage } = usePusher(currentUserId || null);
   const currentChatUserIdRef = useRef<string | null>(null);
   const sessionSubscriptionsRef = useRef<Map<string, () => void>>(new Map());
   const { user } = useAuth();
@@ -18,7 +19,8 @@ export function useUnreadMessages(currentUserId: string | null) {
   // Track which chat is currently open (by userId, not sessionId)
   useEffect(() => {
     const match = pathname?.match(/\/chat\/([^/]+)/);
-    currentChatUserIdRef.current = match ? match[1] : null;
+    const userIdFromUrl = searchParams.get('userId');
+    currentChatUserIdRef.current = match ? match[1] : userIdFromUrl;
 
     // Clear unread count for the currently open chat
     if (currentChatUserIdRef.current) {
@@ -28,47 +30,56 @@ export function useUnreadMessages(currentUserId: string | null) {
         return next;
       });
     }
-  }, [pathname]);
+  }, [pathname, searchParams]);
 
   // Subscribe to all session channels for the current user
   useEffect(() => {
     if (!currentUserId || !subscribeToSession || !user) return;
 
-    const fetchAndSubscribeToSessions = async () => {
+    const fetchInitialData = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const response = await fetch("/api/sessions", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        // 1. Fetch sessions
+        const sessionsResponse = await fetch("/api/sessions", {
+          headers: { Authorization: `Bearer ${token}` },
         });
+        if (sessionsResponse.ok) {
+          const data = await sessionsResponse.json();
+          const sessions = data.sessions || [];
 
-        if (!response.ok) return;
+          sessions.forEach((session: any) => {
+            const sessionId = session.id;
+            if (sessionSubscriptionsRef.current.has(sessionId)) return;
+            const cleanup = subscribeToSession(sessionId);
+            sessionSubscriptionsRef.current.set(sessionId, cleanup);
+          });
+        }
 
-        const data = await response.json();
-        const sessions = data.sessions || [];
-
-        // Subscribe to all session channels
-        sessions.forEach((session: any) => {
-          const sessionId = session.id;
-
-          // Skip if already subscribed
-          if (sessionSubscriptionsRef.current.has(sessionId)) {
-            return;
-          }
-
-          // Subscribe to this session channel
-          const cleanup = subscribeToSession(sessionId);
-          sessionSubscriptionsRef.current.set(sessionId, cleanup);
+        // 2. Fetch unread notifications to seed counts
+        const notifResponse = await fetch("/api/notifications", {
+          headers: { Authorization: `Bearer ${token}` },
         });
+        if (notifResponse.ok) {
+          const allNotifs: any[] = await notifResponse.json();
+          const newCounts = new Map<string, number>();
+
+          allNotifs.forEach((n) => {
+            if (!n.read && n.type === "message" && n.senderId) {
+              newCounts.set(n.senderId, (newCounts.get(n.senderId) || 0) + 1);
+            }
+          });
+
+          setUnreadCounts(newCounts);
+        }
+
       } catch (error) {
-        console.error("Error fetching sessions for unread messages:", error);
+        console.error("Error fetching initial data for unread messages:", error);
       }
     };
 
-    fetchAndSubscribeToSessions();
+    fetchInitialData();
 
     // Cleanup on unmount
     return () => {
@@ -77,28 +88,18 @@ export function useUnreadMessages(currentUserId: string | null) {
     };
   }, [currentUserId, subscribeToSession, user]);
 
-  // Listen for messages from Pusher via onMessage
-  // This will catch messages from all subscribed session channels
+  // Listen for messages from Pusher via onMessage and notification channel
   useEffect(() => {
-    if (!currentUserId || !onMessage) return;
+    if (!currentUserId || !onMessage || !subscribeToChannel) return;
 
-    const cleanup = onMessage("message", (data: any) => {
-      // Only count as unread if:
-      // 1. The message is for the current user (recipientId matches currentUserId)
-      // 2. The chat is not currently open (senderId !== currentChatUserIdRef.current)
-      // 3. The sender is not the current user
+    // 1. Listen for messages on session channels the user is already subscribed to
+    const cleanupMessage = onMessage("message", (data: any) => {
       if (
         data.senderId &&
         data.recipientId === currentUserId &&
         data.senderId !== currentChatUserIdRef.current &&
         data.senderId !== currentUserId
       ) {
-        console.log(
-          "Incrementing unread count for:",
-          data.senderId,
-          "from session:",
-          data.sessionId
-        );
         setUnreadCounts((prev) => {
           const next = new Map(prev);
           const currentCount = next.get(data.senderId) || 0;
@@ -108,8 +109,37 @@ export function useUnreadMessages(currentUserId: string | null) {
       }
     });
 
-    return cleanup;
-  }, [currentUserId, onMessage]);
+    // 2. Listen for notifications on the user's private channel
+    // This catches messages from new sessions or sessions not yet subscribed to
+    const unsubscribeNotifications = subscribeToChannel(
+      `private-user-${currentUserId}`,
+      "new-notification",
+      (data: any) => {
+        // If it's a message and not from the currently open chat
+        if (
+          data.type === "message" &&
+          data.senderId &&
+          data.senderId !== currentChatUserIdRef.current &&
+          data.senderId !== currentUserId
+        ) {
+          setUnreadCounts((prev) => {
+            const next = new Map(prev);
+            const currentCount = next.get(data.senderId) || 0;
+            // Only increment if we don't already have this message from the session channel
+            // (Pusher might send both if we are subscribed to both, but usually notification 
+            // is for the recipient only)
+            next.set(data.senderId, currentCount + 1);
+            return next;
+          });
+        }
+      }
+    );
+
+    return () => {
+      cleanupMessage();
+      unsubscribeNotifications();
+    };
+  }, [currentUserId, onMessage, subscribeToChannel]);
 
   const getUnreadCount = useCallback(
     (userId: string) => {

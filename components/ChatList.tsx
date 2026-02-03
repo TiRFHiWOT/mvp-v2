@@ -11,17 +11,19 @@ import { ChatContextMenu } from "./ChatContextMenu";
 
 export function ChatList({
     currentUserId,
+    activeId: propActiveId,
     onSelectChat,
     onContactInfo
 }: {
     currentUserId: string;
+    activeId?: string | null;
     onSelectChat: (id: string) => void;
     onContactInfo?: (user: any) => void;
 }) {
     const { users, loading } = useUsers(currentUserId);
     const { onlineUsers } = usePusher(currentUserId);
     const { getUnreadCount, clearUnreadCount, markAsUnread } = useUnreadMessages(currentUserId);
-    const [activeId, setActiveId] = useState<string | null>(null);
+    const [activeId, setActiveId] = useState<string | null>(propActiveId || null);
     const [searchQuery, setSearchQuery] = useState("");
     const [showNewMessageModal, setShowNewMessageModal] = useState(false);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -52,6 +54,17 @@ export function ChatList({
     useEffect(() => {
         localStorage.setItem('chatMutedIds', JSON.stringify([...mutedIds]));
     }, [mutedIds]);
+
+    // Sync with propActiveId
+    useEffect(() => {
+        if (propActiveId !== undefined && propActiveId !== activeId) {
+            setActiveId(propActiveId);
+            if (propActiveId) {
+                // If the chat is opened via URL/prop, ensure it's marked as read
+                markChatAsRead(propActiveId);
+            }
+        }
+    }, [propActiveId]);
 
     // Persist manual unread IDs to localStorage
     useEffect(() => {
@@ -92,14 +105,37 @@ export function ChatList({
         return filtered;
     }, [users, searchQuery, activeFilter, mutedIds, getUnreadCount, manualUnreadIds]);
 
-    const handleSelect = (id: string) => {
-        setActiveId(id);
-        clearUnreadCount(id); // Clear real unread count
+    const markChatAsRead = async (id: string) => {
+        clearUnreadCount(id); // Clear local unread count
         setManualUnreadIds(prev => {
             const next = new Set(prev);
             next.delete(id);
             return next;
         });
+
+        // Mark notifications as read on server
+        try {
+            const token = localStorage.getItem("token");
+            if (token) {
+                await fetch("/api/notifications", {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ senderId: id }),
+                });
+                // Notify other components (like TopNav) to refresh notifications
+                window.dispatchEvent(new CustomEvent('notifications-refetched'));
+            }
+        } catch (error) {
+            console.error("Error marking notifications as read:", error);
+        }
+    };
+
+    const handleSelect = async (id: string) => {
+        setActiveId(id);
+        await markChatAsRead(id);
         onSelectChat(id);
     };
 

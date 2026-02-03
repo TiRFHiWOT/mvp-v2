@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ContactInfoSidebar } from "./ContactInfoSidebar";
 import { ConfirmationModal } from "./ConfirmationModal";
+import { usePusher } from "@/hooks/usePusher";
 
 interface TopNavProps {
     title?: string;
@@ -48,6 +49,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showProfileDrawer, setShowProfileDrawer] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [mobileSearchActive, setMobileSearchActive] = useState(false);
 
     const searchRef = useRef<HTMLDivElement>(null);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -95,13 +97,33 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
         if (onSearch) onSearch("");
     };
 
-    // Fetch notifications on mount
+    const { subscribeToChannel } = usePusher(user?.id || null);
+
+    // Fetch notifications on mount and subscribe
     useEffect(() => {
         if (user) {
             fetchNotifications();
-            // Optional: Set up an interval or socket listener here
+
+            const unsubscribe = subscribeToChannel(
+                `private-user-${user.id}`,
+                "new-notification",
+                (data: Notification) => {
+                    setNotifications((prev) => [data, ...prev]);
+                }
+            );
+
+            // Listen for internal notification refresh requests
+            const handleRefresh = () => {
+                fetchNotifications();
+            };
+            window.addEventListener('notifications-refetched', handleRefresh);
+
+            return () => {
+                unsubscribe();
+                window.removeEventListener('notifications-refetched', handleRefresh);
+            };
         }
-    }, [user]);
+    }, [user, subscribeToChannel]);
 
     const fetchNotifications = async () => {
         try {
@@ -162,6 +184,15 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
         }
     };
 
+    const handleNotificationClick = (notification: Notification) => {
+        markAsRead(notification.id);
+        setShowNotifications(false);
+
+        if (notification.type === "message" && notification.sender?.id) {
+            router.push(`/?userId=${notification.sender.id}`);
+        }
+    };
+
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     const handleLogoutClick = () => {
@@ -184,6 +215,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
     return (
         <>
             <header
+                className="top-nav-header"
                 style={{
                     display: "flex",
                     alignItems: "center",
@@ -197,7 +229,10 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                 }}
             >
                 {/* Left Section - Title */}
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-3)" }}>
+                <div
+                    className={`top-nav-title ${mobileSearchActive ? "mobile-search-active" : ""}`}
+                    style={{ display: "flex", alignItems: "center", gap: "var(--spacing-3)" }}
+                >
                     <div
                         style={{
                             width: "32px",
@@ -231,9 +266,10 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                     </h1>
                 </div>
 
-                {/* Center Section - Search Bar */}
+                {/* Center Section - Search Bar (Desktop) */}
                 <div
                     ref={searchRef}
+                    className="top-nav-search"
                     style={{
                         flex: 1,
                         maxWidth: "400px",
@@ -256,7 +292,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                         <Search size={18} color="var(--text-muted)" />
                         <input
                             type="text"
-                            placeholder="Search messages, contacts..."
+                            placeholder="Search..."
                             value={searchQuery}
                             onChange={handleSearchChange}
                             onFocus={() => searchQuery.trim() && setShowSearchResults(true)}
@@ -287,6 +323,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                             </button>
                         ) : (
                             <span
+                                className="search-shortcut"
                                 style={{
                                     fontSize: "var(--font-size-xs)",
                                     color: "var(--text-muted)",
@@ -319,6 +356,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                 zIndex: 200,
                             }}
                         >
+                            {/* ... Content same as before but keeping it concise here ... */}
                             {filteredResults.length > 0 ? (
                                 <>
                                     <div
@@ -425,7 +463,86 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                 </div>
 
                 {/* Right Section - Icons & Avatar */}
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--spacing-3)" }}>
+                <div
+                    className="top-nav-actions"
+                    style={{ display: "flex", alignItems: "center", gap: "var(--spacing-3)" }}
+                >
+                    {/* Mobile Only Search */}
+                    <div
+                        className="mobile-only-search"
+                        style={{
+                            display: "none",
+                            flex: mobileSearchActive ? 1 : "initial"
+                        }}
+                    >
+                        {!mobileSearchActive ? (
+                            <button
+                                onClick={() => setMobileSearchActive(true)}
+                                style={{
+                                    width: "36px",
+                                    height: "36px",
+                                    borderRadius: "var(--radius-md)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    border: "none",
+                                    backgroundColor: "transparent",
+                                    color: "var(--text-secondary)",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                <Search size={20} />
+                            </button>
+                        ) : (
+                            <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "8px" }}>
+                                <div
+                                    style={{
+                                        flex: 1,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "var(--spacing-2)",
+                                        padding: "var(--spacing-2) var(--spacing-4)",
+                                        backgroundColor: "var(--bg-main)",
+                                        borderRadius: "var(--radius-lg)",
+                                        border: "1px solid var(--border-light)",
+                                    }}
+                                >
+                                    <Search size={16} color="var(--text-muted)" />
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        placeholder="Search..."
+                                        value={searchQuery}
+                                        onChange={handleSearchChange}
+                                        style={{
+                                            flex: 1,
+                                            border: "none",
+                                            outline: "none",
+                                            backgroundColor: "transparent",
+                                            fontSize: "var(--font-size-sm)",
+                                            color: "var(--text-primary)",
+                                            minWidth: 0,
+                                        }}
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setMobileSearchActive(false);
+                                        clearSearch();
+                                    }}
+                                    style={{
+                                        background: "none",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        padding: "4px",
+                                        color: "var(--text-muted)",
+                                    }}
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     {/* Notifications */}
                     <div ref={notificationRef} style={{ position: "relative" }}>
                         <button
@@ -550,7 +667,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                         notifications.map((notification) => (
                                             <button
                                                 key={notification.id}
-                                                onClick={() => markAsRead(notification.id)}
+                                                onClick={() => handleNotificationClick(notification)}
                                                 style={{
                                                     width: "100%",
                                                     display: "flex",
@@ -920,6 +1037,61 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                 }
                 .logout-item:hover {
                     background-color: #FEE2E2 !important;
+                }
+                
+                /* Mobile Responsiveness for TopNav */
+                @media (max-width: 768px) {
+                    .top-nav-header {
+                        padding: 8px 12px !important;
+                        height: 64px !important;
+                        flex-wrap: nowrap !important;
+                        gap: 8px !important;
+                        align-content: center !important;
+                    }
+                    
+                    /* Row 1: Title */
+                    .top-nav-title {
+                        width: auto !important;
+                        min-width: 0 !important;
+                        flex-basis: auto !important;
+                        order: unset !important;
+                        margin-bottom: 0 !important;
+                    }
+
+                    /* Hide Title when Search is Active */
+                    .top-nav-title.mobile-search-active {
+                        display: none !important;
+                    }
+
+                    /* Hide Desktop Search */
+                    .top-nav-search {
+                        display: none !important;
+                    }
+                    
+                    /* Show Mobile Search Trigger */
+                    .mobile-only-search {
+                        display: block !important;
+                    }
+
+                    /* Actions (Mobile Search + Bell) */
+                    .top-nav-actions {
+                        order: unset !important;
+                        width: auto !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        margin-left: auto !important; /* Push to right */
+                        gap: 8px !important;
+                    }
+                    
+                    /* Hide user avatar on mobile */
+                    .user-avatar-btn {
+                        display: none !important;
+                    }
+                    
+                    /* Hide the ⌘K hint on mobile */
+                    .search-shortcut {
+                        display: none !important;
+                    }
                 }
             `}</style>
             </header>

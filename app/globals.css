@@ -387,3 +387,28 @@ body {
     background-position: -200% 0;
   }
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+    /* Hide sidebar by default on mobile or move to bottom */
+    --chat-list-width: 100%;
+  }
+
+  /* Helper classes for mobile showing/hiding */
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  .mobile-visible {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* On mobile, main layout flex direction might need ensuring column */
+  /* We want Sidebar at bottom, content on top. */
+  main {
+    flex-direction: column-reverse !important;
+  }
+}

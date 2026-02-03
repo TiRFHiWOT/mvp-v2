@@ -51,7 +51,7 @@ export function Sidebar() {
         >
             {/* Logo */}
             <div
-                className="flex items-center justify-center mb-8"
+                className="flex items-center justify-center mb-8 logo-container"
                 style={{
                     width: '48px',
                     height: '48px',
@@ -96,7 +96,7 @@ export function Sidebar() {
             {/* User Avatar - Opens Menu */}
             <button
                 onClick={() => setShowMenu(true)}
-                className="avatar avatar-lg"
+                className="avatar avatar-lg mobile-nav-item"
                 style={{
                     width: '48px',
                     height: '48px',
@@ -140,10 +140,44 @@ export function Sidebar() {
           transform: scale(1.05);
           transition: all var(--transition-fast);
         }
+
+        /* Mobile Bottom Nav Styles */
+        @media (max-width: 768px) {
+          aside {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 60px !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: space-around !important; /* Distribute all items evenly */
+            padding: 0 8px !important; /* Small padding on edges */
+            z-index: 1000;
+            background-color: var(--bg-sidebar) !important;
+            border-top: 1px solid var(--border-light) !important;
+            box-shadow: 0 -1px 3px rgba(0,0,0,0.05);
+          }
+          
+          .logo-container {
+            display: none !important;
+          }
+          
+          /* "Flatten" the nav hierarchy so buttons participate in aside's flex layout */
+          nav {
+            display: contents !important;
+          }
+          
+          /* Remove gap since justify-content handles spacing */
+          nav > button {
+             margin: 0 !important;
+          }
+        }
       `}</style>
 
             {/* Sidebar Menu */}
             <SidebarMenu isOpen={showMenu} onClose={() => setShowMenu(false)} />
-        </aside>
+        </aside >
     );
 }
