@@ -15,7 +15,7 @@ interface ContactInfoSidebarProps {
         email: string;
     } | null;
     title?: string;
-    messages: Message[];
+    messages?: Message[];
 }
 
 export function ContactInfoSidebar({
