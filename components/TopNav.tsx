@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ContactInfoSidebar } from "./ContactInfoSidebar";
 import { SidebarMenu } from "./SidebarMenu";
 import { usePusher } from "@/hooks/usePusher";
+import { useUsers } from "@/hooks/useUsers";
 
 interface TopNavProps {
     title?: string;
@@ -29,20 +30,10 @@ interface Notification {
     } | null;
 }
 
-
-
-// Mock search results
-const mockSearchResults = [
-    { id: "1", name: "Sarah Wilson", type: "contact", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" },
-    { id: "2", name: "Design Team Chat", type: "chat", avatar: null },
-    { id: "3", name: "Schedule meeting", type: "message", preview: "...can we schedule a meeting for..." },
-    { id: "4", name: "Alex Johnson", type: "contact", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" },
-    { id: "5", name: "Project Updates", type: "chat", avatar: null },
-];
-
 export function TopNav({ title = "Message", onSearch }: TopNavProps) {
     const { user } = useAuth();
     const router = useRouter();
+    const { users } = useUsers(user?.id || "");
     const [searchQuery, setSearchQuery] = useState("");
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -75,10 +66,10 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
 
     // Filter search results based on query
     const filteredResults = searchQuery.trim()
-        ? mockSearchResults.filter(
+        ? users.filter(
             (item) =>
                 item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (item.preview && item.preview.toLowerCase().includes(searchQuery.toLowerCase()))
+                item.email.toLowerCase().includes(searchQuery.toLowerCase())
         )
         : [];
 
@@ -366,7 +357,8 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                             key={result.id}
                                             onClick={() => {
                                                 setShowSearchResults(false);
-                                                // Handle search result click
+                                                setSearchQuery("");
+                                                router.push(`/?userId=${result.id}`);
                                             }}
                                             style={{
                                                 width: "100%",
@@ -382,14 +374,15 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                             }}
                                             className="search-result-item"
                                         >
-                                            {result.avatar ? (
+                                            {result.picture ? (
                                                 <img
-                                                    src={result.avatar}
+                                                    src={result.picture}
                                                     alt={result.name}
                                                     style={{
                                                         width: "36px",
                                                         height: "36px",
                                                         borderRadius: "50%",
+                                                        objectFit: "cover"
                                                     }}
                                                 />
                                             ) : (
@@ -398,17 +391,13 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                                         width: "36px",
                                                         height: "36px",
                                                         borderRadius: "50%",
-                                                        backgroundColor: result.type === "chat" ? "var(--color-primary-light)" : "var(--bg-main)",
+                                                        backgroundColor: "var(--color-primary-light)",
                                                         display: "flex",
                                                         alignItems: "center",
                                                         justifyContent: "center",
                                                     }}
                                                 >
-                                                    {result.type === "chat" ? (
-                                                        <MessageSquare size={18} color="var(--color-primary)" />
-                                                    ) : (
-                                                        <Search size={18} color="var(--text-muted)" />
-                                                    )}
+                                                    <User size={18} color="var(--color-primary)" />
                                                 </div>
                                             )}
                                             <div style={{ flex: 1, minWidth: 0 }}>
@@ -429,7 +418,7 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                                         textTransform: "capitalize",
                                                     }}
                                                 >
-                                                    {result.preview || result.type}
+                                                    {result.email}
                                                 </div>
                                             </div>
                                         </button>
@@ -461,7 +450,8 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                         className="mobile-only-search"
                         style={{
                             display: "none",
-                            flex: mobileSearchActive ? 1 : "initial"
+                            flex: mobileSearchActive ? 1 : "initial",
+                            position: "relative"
                         }}
                     >
                         {!mobileSearchActive ? (
@@ -529,6 +519,83 @@ export function TopNav({ title = "Message", onSearch }: TopNavProps) {
                                 >
                                     <X size={20} />
                                 </button>
+                                {searchQuery && (
+                                    <div
+                                        style={{
+                                            position: "absolute",
+                                            top: "100%",
+                                            left: "0",
+                                            right: "0",
+                                            marginTop: "8px",
+                                            backgroundColor: "var(--bg-surface)",
+                                            border: "1px solid var(--border-light)",
+                                            borderRadius: "var(--radius-lg)",
+                                            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+                                            maxHeight: "300px",
+                                            overflowY: "auto",
+                                            zIndex: 200,
+                                        }}
+                                    >
+                                        {filteredResults.length > 0 ? (
+                                            <>
+                                                <div
+                                                    style={{
+                                                        padding: "8px 12px",
+                                                        fontSize: "11px",
+                                                        color: "var(--text-muted)",
+                                                        fontWeight: 600,
+                                                        textTransform: "uppercase",
+                                                        borderBottom: "1px solid var(--border-light)",
+                                                    }}
+                                                >
+                                                    Search Results
+                                                </div>
+                                                {filteredResults.map((result) => (
+                                                    <button
+                                                        key={result.id}
+                                                        onClick={() => {
+                                                            setMobileSearchActive(false);
+                                                            setSearchQuery("");
+                                                            router.push(`/?userId=${result.id}`);
+                                                        }}
+                                                        style={{
+                                                            width: "100%",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "12px",
+                                                            padding: "10px 12px",
+                                                            border: "none",
+                                                            backgroundColor: "transparent",
+                                                            cursor: "pointer",
+                                                            textAlign: "left",
+                                                            borderBottom: "1px solid var(--border-light)"
+                                                        }}
+                                                    >
+                                                        {result.picture ? (
+                                                            <img
+                                                                src={result.picture}
+                                                                alt={result.name}
+                                                                style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }}
+                                                            />
+                                                        ) : (
+                                                            <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "var(--color-primary-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                <User size={16} color="var(--color-primary)" />
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <div style={{ fontSize: "14px", fontWeight: 500, color: "var(--text-primary)" }}>{result.name}</div>
+                                                            <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{result.email}</div>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </>
+                                        ) : (
+                                            <div style={{ padding: "16px", textAlign: "center", color: "var(--text-muted)", fontSize: "14px" }}>
+                                                No results found
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
